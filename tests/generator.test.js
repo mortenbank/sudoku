@@ -56,7 +56,7 @@ describe('technique bands', () => {
     it('expert needs X-Wing / fish / beyond (harder than hard)', async () => {
         const out = await gen('expert', 41, { timeBudgetMs: 15000 });
         assert.equal(out.grade.band, 'advanced', JSON.stringify(out.grade));
-        assert.ok(bandRank(out.grade.band) > bandRank('triples'));
+        assert.ok(bandRank(out.grade.band) > bandRank('intermediate'));
         assert.equal(countSolutions(out.puzzle, 2), 1);
     });
 
@@ -71,6 +71,20 @@ describe('technique bands', () => {
         assert.ok(ranks[2] > ranks[1], `hard ${hard.grade.band} vs medium ${medium.grade.band}`);
         assert.ok(ranks[3] > ranks[1], `expert ${expert.grade.band} vs medium ${medium.grade.band}`);
         assert.ok(ranks[3] >= ranks[2], `expert ${expert.grade.band} vs hard ${hard.grade.band}`);
+    });
+});
+
+describe('technique band is the accept rule', () => {
+    it('keeps a band match even when clue count is outside the old 22–32 windows', async () => {
+        const hard = await gen('hard', 77, { timeBudgetMs: 12000 });
+        const expert = await gen('expert', 88, { timeBudgetMs: 15000 });
+        assert.equal(hard.grade.band, 'intermediate', JSON.stringify(hard.grade));
+        assert.equal(expert.grade.band, 'advanced', JSON.stringify(expert.grade));
+        // Clue count must not be used as the difficulty signal.
+        assert.ok(typeof hard.grade.clues === 'number');
+        assert.ok(typeof expert.grade.clues === 'number');
+        assert.equal(hard.grade.hardestRank >= 7, true, hard.grade.hardest);
+        assert.equal(expert.grade.hardestRank >= 14, true, expert.grade.hardest);
     });
 });
 

@@ -9,64 +9,33 @@ import {
 import { bandRank, gradePuzzle } from './techniques.js';
 
 /**
- * Difficulty bands. Technique grade is primary; clue count is a soft secondary.
+ * Difficulty is the hardest human technique required — not how many cells are hidden.
  *
- * Easy     → only Naked / Hidden Single
- * Medium   → pairs or locked candidates (pointing / claiming)
- * Hard     → naked / hidden triples
- * Expert   → X-Wing / swordfish, or unique but beyond those techniques
+ * Easy     → singles only
+ * Medium   → pairs or locked candidates
+ * Hard     → triples / intermediate (wings, unique rectangle)
+ * Expert   → X-Wing / swordfish / beyond
+ *
+ * digFloor is only a carving heuristic (how far we strip before grading).
+ * It is not an acceptance constraint. A band match is accepted at any clue count.
  */
 export const DIFFICULTY = {
-    beginner: {
-        band: 'singles',
-        minClues: 40,
-        maxClues: 50,
-        preferClues: 45,
-        timeBudgetMs: 2500,
-    },
-    easy: {
-        band: 'singles',
-        minClues: 30,
-        maxClues: 38,
-        preferClues: 34,
-        timeBudgetMs: 3500,
-    },
-    medium: {
-        band: 'pairs',
-        minClues: 24,
-        maxClues: 34,
-        preferClues: 28,
-        timeBudgetMs: 6000,
-    },
-    hard: {
-        band: 'intermediate',
-        minClues: 22,
-        maxClues: 30,
-        preferClues: 25,
-        timeBudgetMs: 9000,
-    },
-    expert: {
-        band: 'advanced',
-        minClues: 20,
-        maxClues: 28,
-        preferClues: 22,
-        timeBudgetMs: 12000,
-    },
+    beginner: { band: 'singles', digFloor: 38, timeBudgetMs: 2500 },
+    easy: { band: 'singles', digFloor: 28, timeBudgetMs: 3500 },
+    medium: { band: 'pairs', digFloor: 20, timeBudgetMs: 6000 },
+    hard: { band: 'intermediate', digFloor: 20, timeBudgetMs: 9000 },
+    expert: { band: 'advanced', digFloor: 20, timeBudgetMs: 12000 },
 };
 
 const idle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+/** Technique-band distance only. Clue count is not part of acceptance. */
 function scoreCandidate(grade, spec) {
-    const bandDelta = Math.abs(bandRank(grade.band) - bandRank(spec.band));
-    const clueDelta = Math.abs(grade.clues - spec.preferClues);
-    // Technique match dominates; clue distance is a tie-break.
-    return bandDelta * 1000 + clueDelta;
+    return Math.abs(bandRank(grade.band) - bandRank(spec.band));
 }
 
-function isExactMatch(grade, spec) {
-    if (grade.band !== spec.band) return false;
-    if (grade.clues < spec.minClues || grade.clues > spec.maxClues) return false;
-    return true;
+function matchesBand(grade, spec) {
+    return grade.band === spec.band;
 }
 
 function emptyCells(puzzle) {
@@ -79,22 +48,14 @@ function emptyCells(puzzle) {
     return empties;
 }
 
-function addClue(puzzle, solution, rng) {
-    const empties = emptyCells(puzzle);
-    if (!empties.length) return false;
-    const pick = rng.int ? rng.int(empties.length) : Math.floor(rng() * empties.length);
-    const [r, c] = empties[pick];
-    puzzle[r][c] = solution[r][c];
-    return true;
-}
-
 /**
- * Add givens one at a time, trying alternate cells when a clue overshoots the band.
+ * Add givens only to drop the technique grade into the target band.
+ * Never add clues to chase a clue-count window.
  */
 function nudgeTowardBand(puzzle, solution, spec, rng, shouldStop) {
     let grade = gradePuzzle(puzzle);
     const target = bandRank(spec.band);
-    while (bandRank(grade.band) > target && clueCount(puzzle) < spec.maxClues && !shouldStop()) {
+    while (bandRank(grade.band) > target && emptyCells(puzzle).length && !shouldStop()) {
         const empties = shuffleArray(emptyCells(puzzle), rng);
         let placed = false;
         for (const [r, c] of empties) {
@@ -114,10 +75,7 @@ function nudgeTowardBand(puzzle, solution, spec, rng, shouldStop) {
     return grade;
 }
 
-/**
- * Remove givens while uniqueness holds, down to minClues.
- * Yields occasionally so the loading spinner can paint.
- */
+/** Strip givens while the puzzle stays unique, down to a search floor. */
 async function digUnique(filled, minClues, rng, shouldStop, yieldFn) {
     const puzzle = cloneGrid(filled);
     const order = shuffleArray(
@@ -151,7 +109,6 @@ export async function generatePuzzle(difficulty, options = {}) {
     const onProgress = options.onProgress || (() => {});
     const budget = options.timeBudgetMs ?? spec.timeBudgetMs;
     const deadline = (options.now || Date.now)() + budget;
-
     const shouldStop = () => (options.now || Date.now)() >= deadline;
 
     let best = null;
@@ -165,9 +122,7 @@ export async function generatePuzzle(difficulty, options = {}) {
         if (shouldStop()) break;
 
         onProgress({ attempts, difficulty, phase: 'dig' });
-        // Dig deeper than the soft clue target so we can fill back into the band.
-        const floor = Math.max(17, spec.minClues - (spec.band === 'singles' ? 0 : 4));
-        let puzzle = await digUnique(solution, floor, rng, shouldStop, yieldFn);
+        let puzzle = await digUnique(solution, spec.digFloor, rng, shouldStop, yieldFn);
         if (!hasUniqueSolution(puzzle)) continue;
 
         let grade = gradePuzzle(puzzle);
@@ -177,35 +132,12 @@ export async function generatePuzzle(difficulty, options = {}) {
             grade = nudgeTowardBand(puzzle, solution, spec, rng, shouldStop);
         }
 
-        if (bandRank(grade.band) < bandRank(spec.band)) {
-            const candidate = { puzzle: cloneGrid(puzzle), solution, grade, attempts };
-            if (!best || scoreCandidate(grade, spec) < scoreCandidate(best.grade, spec)) {
-                best = candidate;
-            }
-            continue;
-        }
-
-        if (grade.band === spec.band && grade.clues < spec.minClues) {
-            while (clueCount(puzzle) < spec.minClues && !shouldStop()) {
-                const empties = emptyCells(puzzle);
-                if (!empties.length) break;
-                const [r, c] = empties[rng.int ? rng.int(empties.length) : 0];
-                puzzle[r][c] = solution[r][c];
-                const next = gradePuzzle(puzzle);
-                if (next.band !== spec.band) {
-                    puzzle[r][c] = 0;
-                    break;
-                }
-                grade = next;
-            }
-        }
-
-        grade = gradePuzzle(puzzle);
         const candidate = { puzzle: cloneGrid(puzzle), solution, grade, attempts };
         if (!best || scoreCandidate(grade, spec) < scoreCandidate(best.grade, spec)) {
             best = candidate;
         }
-        if (isExactMatch(grade, spec)) {
+
+        if (matchesBand(grade, spec)) {
             onProgress({ attempts, difficulty, phase: 'done', grade });
             return best;
         }
@@ -214,13 +146,11 @@ export async function generatePuzzle(difficulty, options = {}) {
     }
 
     if (!best) {
-        // Last-resort unique puzzle so the UI never hangs on an empty board.
         const solution = generateFilledBoard(rng);
-        const puzzle = await digUnique(solution, spec.preferClues, rng, () => false, yieldFn);
+        const puzzle = await digUnique(solution, spec.digFloor, rng, () => false, yieldFn);
         best = { puzzle, solution, grade: gradePuzzle(puzzle), attempts, fallback: true };
     }
 
     onProgress({ attempts, difficulty, phase: 'timeout', grade: best.grade });
     return best;
 }
-

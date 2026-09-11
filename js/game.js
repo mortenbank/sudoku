@@ -1,7 +1,7 @@
 import { generatePuzzle } from './generator.js';
 import { t, translations } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
-import { candidatesForCell, lockedCandidateEliminations } from './techniques.js';
+import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorsElement = document.getElementById('errors');
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingDetail = document.getElementById('loading-detail');
+    const techniqueGradeEl = document.getElementById('technique-grade');
     const geminiHintBtn = document.getElementById('gemini-hint-btn');
     const hintModal = document.getElementById('hint-modal');
     const hintTitle = document.getElementById('hint-title');
@@ -51,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let saveInterval;
     const size = 9;
     let currentLang = 'da';
+    let currentGrade = null;
     let lastTap = 0;
     let lastTapTarget = null;
     let hintClickTimer = null;
@@ -80,6 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function setLanguage(lang) {
         localStorage.setItem('sudokuLang', lang);
         updateUIText(lang);
+        updateGradeLabel();
+    }
+
+    function updateGradeLabel() {
+        if (!techniqueGradeEl) return;
+        if (!currentGrade || !currentGrade.hardest) {
+            techniqueGradeEl.textContent = '';
+            return;
+        }
+        const label = TECHNIQUE_LABELS[currentGrade.hardest] || currentGrade.hardest;
+        techniqueGradeEl.textContent = t(currentLang, 'requiresTechnique', label);
     }
 
     function isNoteValid(row, col, num) {
@@ -283,11 +296,13 @@ document.addEventListener('DOMContentLoaded', () => {
         await new Promise((resolve) => setTimeout(resolve, 40));
 
         const generated = await generatePuzzle(difficulty, {
-            onProgress: ({ attempts, phase }) => {
-                loadingDetail.textContent = `${t(currentLang, 'generatingDetail', t(currentLang, difficulty))} (${attempts}, ${phase})`;
+            onProgress: ({ attempts, phase, grade }) => {
+                const hint = grade?.hardest ? ` → ${grade.hardest}` : '';
+                loadingDetail.textContent = `${t(currentLang, 'generatingDetail', t(currentLang, difficulty))} (${attempts}, ${phase}${hint})`;
             },
         });
 
+        currentGrade = generated.grade;
         solution = generated.solution;
         boardData = generated.puzzle.map((row) =>
             row.map((cell) => ({
@@ -316,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorCount = 0;
         secondsElapsed = 0;
         updateUIText(currentLang);
+        updateGradeLabel();
         timerElement.textContent = '00:00';
         timerElement.classList.remove('text-red-600');
         drawBoard();
@@ -327,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(timerInterval);
         clearInterval(saveInterval);
         updateUIText(currentLang);
+        updateGradeLabel();
         timerElement.classList.toggle('text-red-600', isHelperMode);
         geminiHintBtn.classList.toggle('hidden', !isHelperMode);
         timerElement.textContent = formatTime(secondsElapsed);
@@ -650,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isHelperMode,
                 wasNoteUsed,
                 wasHelperUsed,
+                currentGrade,
             }),
         );
     }
@@ -670,6 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
             helperToggleCheckbox.checked = isHelperMode;
             wasNoteUsed = gs.wasNoteUsed;
             wasHelperUsed = gs.wasHelperUsed;
+            currentGrade = gs.currentGrade || null;
             return true;
         } catch {
             localStorage.removeItem('sudokuGameState');
