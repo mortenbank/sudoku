@@ -3,7 +3,7 @@ import { t, translations } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
 import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
 import { VERSION } from './version.js';
-import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry } from './highscore-rules.js';
+import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
 
 if ('serviceWorker' in navigator) {
@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         highscoreList.innerHTML = '';
         highscoreHeaders.classList.add('hidden');
         highscorePrompt.classList.remove('hidden');
-        const remembered = normalizeInitialsInput(localStorage.getItem('sudokuInitials') || '');
+        const remembered = readRememberedInitials();
         highscorePrompt.innerHTML = `
             <form class="initials-form" id="initials-form" autocomplete="off">
                 <label class="initials-label" for="initials-input">${t(currentLang, 'initialsPrompt')}<br><span>${t(currentLang, 'initialsHint')}</span></label>
@@ -808,7 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (errorEl) errorEl.textContent = t(currentLang, 'initialsInvalid');
             return;
         }
-        localStorage.setItem('sudokuInitials', initials);
+        writeRememberedInitials(initials);
         const entry = buildScoreEntry({ ...pendingWinScore, initials });
         saveLocalHighScore(entry, pendingWinScore.difficulty);
         if (submitBtn) {

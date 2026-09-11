@@ -27,6 +27,32 @@ export function sanitizeInitials(raw) {
     return INITIALS_RE.test(value) ? value : null;
 }
 
+/** Local preference only — the shared leaderboard is server-side. */
+export const INITIALS_STORAGE_KEY = 'sudokuInitials';
+
+export function readRememberedInitials(storage) {
+    try {
+        const store = storage ?? globalThis.localStorage;
+        if (!store) return '';
+        return normalizeInitialsInput(store.getItem(INITIALS_STORAGE_KEY) || '');
+    } catch {
+        return '';
+    }
+}
+
+export function writeRememberedInitials(raw, storage) {
+    const initials = sanitizeInitials(raw);
+    if (!initials) return null;
+    try {
+        const store = storage ?? globalThis.localStorage;
+        if (!store) return initials;
+        store.setItem(INITIALS_STORAGE_KEY, initials);
+    } catch {
+        // Private mode / quota — still return the sanitized value for this win.
+    }
+    return initials;
+}
+
 export function computedFinalScore(time, errors) {
     return time + errors * ERROR_PENALTY;
 }

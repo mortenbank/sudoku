@@ -4,6 +4,8 @@ import {
     DIFFICULTIES,
     sanitizeInitials,
     normalizeInitialsInput,
+    readRememberedInitials,
+    writeRememberedInitials,
     validateScorePayload,
     computedFinalScore,
     starTypeFor,
@@ -35,6 +37,22 @@ describe('initials', () => {
     it('strips spaces and punctuation while typing', () => {
         assert.equal(normalizeInitialsInput(' m b '), 'MB');
         assert.equal(normalizeInitialsInput('m-b'), 'MB');
+    });
+
+    it('remembers initials in a local store and prefills the next prompt', () => {
+        const memory = new Map();
+        const storage = {
+            getItem: (key) => memory.get(key) ?? null,
+            setItem: (key, value) => memory.set(key, value),
+        };
+        assert.equal(readRememberedInitials(storage), '');
+        assert.equal(writeRememberedInitials('mb', storage), 'MB');
+        assert.equal(storage.getItem('sudokuInitials'), 'MB');
+        assert.equal(readRememberedInitials(storage), 'MB');
+        assert.equal(writeRememberedInitials('æøå', storage), 'ÆØÅ');
+        assert.equal(readRememberedInitials(storage), 'ÆØÅ');
+        assert.equal(writeRememberedInitials('X', storage), null);
+        assert.equal(readRememberedInitials(storage), 'ÆØÅ');
     });
 });
 
