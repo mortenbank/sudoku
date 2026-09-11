@@ -2,6 +2,9 @@ import { generatePuzzle } from './generator.js';
 import { t, translations } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
 import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
+import { VERSION } from './version.js';
+import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry } from './highscore-rules.js';
+import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -19,7 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const helperToggleCheckbox = document.getElementById('helper-toggle-checkbox');
     const highscoreContainer = document.getElementById('highscore-container');
     const highscoreTitle = document.getElementById('highscore-title');
+    const highscoreSource = document.getElementById('highscore-source');
+    const highscorePrompt = document.getElementById('highscore-prompt');
+    const highscoreHeaders = document.getElementById('highscore-headers');
     const highscoreList = document.getElementById('highscore-list');
+    const appVersionEl = document.getElementById('app-version');
     const timerElement = document.getElementById('timer');
     const errorsElement = document.getElementById('errors');
     const loadingOverlay = document.getElementById('loading-overlay');
@@ -57,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastTapTarget = null;
     let hintClickTimer = null;
     let hintClickCount = 0;
+    let highscoreAwaitingInitials = false;
+    let pendingWinScore = null;
 
     function valuesGrid() {
         return boardData.map((row) => row.map((cell) => cell.value));
@@ -83,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sudokuLang', lang);
         updateUIText(lang);
         updateGradeLabel();
+        if (highscoreAwaitingInitials && pendingWinScore) showInitialsPrompt();
     }
 
     function updateGradeLabel() {
@@ -282,6 +292,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function startNewGame() {
+        highscoreAwaitingInitials = false;
+        pendingWinScore = null;
+        if (highscorePrompt) {
+            highscorePrompt.classList.add('hidden');
+            highscorePrompt.innerHTML = '';
+        }
+        if (highscoreSource) highscoreSource.textContent = '';
         highscoreContainer.classList.add('hidden');
         boardElement.classList.remove('board-inactive');
         keypad.classList.remove('board-inactive');
@@ -362,14 +379,16 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(timerInterval);
         clearInterval(saveInterval);
         clearSavedGameState();
-        const newScoreDate = saveHighScore(
-            secondsElapsed,
-            errorCount,
-            difficultySelect.value,
-            wasNoteUsed,
-            wasHelperUsed,
-        );
-        displayHighScores(difficultySelect.value, newScoreDate);
+        isGameActive = false;
+        pendingWinScore = {
+            time: secondsElapsed,
+            errors: errorCount,
+            difficulty: difficultySelect.value,
+            noteUsed: wasNoteUsed,
+            helperUsed: wasHelperUsed,
+            date: Date.now(),
+        };
+        showInitialsPrompt();
     }
 
     function handleCellClick(e) {
@@ -510,6 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleKeyboardInput(e) {
+        if (highscoreAwaitingInitials || e.target.closest('input, textarea')) return;
+        if (!highscoreContainer.classList.contains('hidden')) return;
         if (!isGameActive) startGameTimer();
         if (selectedCell.row === -1 && !String(e.key).includes('Arrow')) return;
         switch (e.key) {
@@ -701,46 +722,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getHighScores(difficulty) {
-        return JSON.parse(localStorage.getItem(`sudokuHighScores_${difficulty}`) || '[]');
-    }
-
-    function saveHighScore(time, errors, difficulty, noteUsed, helperUsed) {
-        const scores = getHighScores(difficulty);
-        const penalty = errors * 30;
-        const finalScore = time + penalty;
-        let starType = 'none';
-        if (errors === 0) {
-            if (!noteUsed && !helperUsed) starType = 'gold';
-            else if (noteUsed && !helperUsed) starType = 'silver';
+        try {
+            const parsed = JSON.parse(localStorage.getItem(`sudokuHighScores_${difficulty}`) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
         }
-        const newScore = { time, errors, finalScore, date: Date.now(), starType };
-        scores.push(newScore);
-        scores.sort((a, b) => a.finalScore - b.finalScore);
-        localStorage.setItem(`sudokuHighScores_${difficulty}`, JSON.stringify(scores.slice(0, 10)));
-        return newScore.date;
     }
 
-    function displayHighScores(difficulty, newScoreDate) {
+    function saveLocalHighScore(entry, difficulty) {
         const scores = getHighScores(difficulty);
-        highscoreTitle.textContent = t(currentLang, difficulty).toUpperCase();
+        scores.push(entry);
+        scores.sort((a, b) => (a.finalScore ?? a.time) - (b.finalScore ?? b.time));
+        localStorage.setItem(`sudokuHighScores_${difficulty}`, JSON.stringify(scores.slice(0, 10)));
+    }
+
+    function starMarkup(starType) {
+        if (starType === 'gold') return '⭐';
+        if (starType === 'silver') return '☆';
+        return '';
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function showHighscoreOverlay() {
+        boardElement.classList.add('board-inactive');
+        keypad.classList.add('board-inactive');
+        highscoreContainer.classList.remove('hidden');
+    }
+
+    function showInitialsPrompt() {
+        highscoreAwaitingInitials = true;
+        highscoreTitle.textContent = t(currentLang, pendingWinScore.difficulty).toUpperCase();
+        highscoreSource.textContent = '';
         highscoreList.innerHTML = '';
-        if (scores.length === 0) {
+        highscoreHeaders.classList.add('hidden');
+        highscorePrompt.classList.remove('hidden');
+        const remembered = normalizeInitialsInput(localStorage.getItem('sudokuInitials') || '');
+        highscorePrompt.innerHTML = `
+            <form class="initials-form" id="initials-form" autocomplete="off">
+                <label class="initials-label" for="initials-input">${t(currentLang, 'initialsPrompt')}<br><span>${t(currentLang, 'initialsHint')}</span></label>
+                <input id="initials-input" class="initials-input" name="initials" type="text" maxlength="3" spellcheck="false" autocapitalize="characters" autocomplete="off" inputmode="text">
+                <p class="initials-error" id="initials-error"></p>
+                <div class="initials-actions">
+                    <button type="submit" class="initials-submit" id="initials-submit">${t(currentLang, 'initialsSubmit')}</button>
+                    <button type="button" class="initials-skip" id="initials-skip">${t(currentLang, 'initialsSkip')}</button>
+                </div>
+            </form>
+        `;
+        showHighscoreOverlay();
+        const form = document.getElementById('initials-form');
+        const input = document.getElementById('initials-input');
+        const errorEl = document.getElementById('initials-error');
+        input.value = remembered;
+        form.addEventListener('click', (e) => e.stopPropagation());
+        input.addEventListener('input', () => {
+            input.value = normalizeInitialsInput(input.value);
+            errorEl.textContent = '';
+        });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            submitWinScore(input.value);
+        });
+        document.getElementById('initials-skip').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            skipWinScore();
+        });
+        input.focus();
+        input.select();
+    }
+
+    async function submitWinScore(rawInitials) {
+        const initials = sanitizeInitials(rawInitials);
+        const errorEl = document.getElementById('initials-error');
+        const submitBtn = document.getElementById('initials-submit');
+        if (!initials) {
+            if (errorEl) errorEl.textContent = t(currentLang, 'initialsInvalid');
+            return;
+        }
+        localStorage.setItem('sudokuInitials', initials);
+        const entry = buildScoreEntry({ ...pendingWinScore, initials });
+        saveLocalHighScore(entry, pendingWinScore.difficulty);
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = t(currentLang, 'highscoreSaving');
+        }
+        try {
+            const result = await submitSharedHighScore({
+                difficulty: pendingWinScore.difficulty,
+                initials,
+                time: pendingWinScore.time,
+                errors: pendingWinScore.errors,
+                noteUsed: pendingWinScore.noteUsed,
+                helperUsed: pendingWinScore.helperUsed,
+            });
+            displayHighScores(pendingWinScore.difficulty, result.entry?.id || entry.id, result.scores, 'shared');
+        } catch {
+            displayHighScores(pendingWinScore.difficulty, entry.id, getHighScores(pendingWinScore.difficulty), 'local');
+        }
+    }
+
+    async function skipWinScore() {
+        const entry = buildScoreEntry({ ...pendingWinScore, initials: '—' });
+        saveLocalHighScore(entry, pendingWinScore.difficulty);
+        try {
+            const scores = await fetchSharedHighScores(pendingWinScore.difficulty);
+            displayHighScores(pendingWinScore.difficulty, entry.id, scores, 'shared');
+        } catch {
+            displayHighScores(pendingWinScore.difficulty, entry.id, getHighScores(pendingWinScore.difficulty), 'local');
+        }
+    }
+
+    function displayHighScores(difficulty, highlightId, scores, source) {
+        highscoreAwaitingInitials = false;
+        highscorePrompt.classList.add('hidden');
+        highscorePrompt.innerHTML = '';
+        highscoreHeaders.classList.remove('hidden');
+        highscoreTitle.textContent = t(currentLang, difficulty).toUpperCase();
+        if (source === 'shared') highscoreSource.textContent = t(currentLang, 'highscoreShared');
+        else if (source === 'local-error') highscoreSource.textContent = t(currentLang, 'highscoreLoadError');
+        else highscoreSource.textContent = t(currentLang, 'highscoreLocalFallback');
+        highscoreList.innerHTML = '';
+        if (!scores || scores.length === 0) {
             highscoreList.innerHTML = `<li class="text-center text-yellow-300 p-4">${t(currentLang, 'noScores')}</li>`;
         } else {
             scores.forEach((score, index) => {
                 const li = document.createElement('li');
-                li.className = 'score-item grid grid-cols-5 gap-2 items-center p-2 text-xs sm:text-sm';
-                if (score.date === newScoreDate) li.classList.add('new-highscore');
-                let star = '';
-                if (score.starType === 'gold') star = '⭐';
-                if (score.starType === 'silver') star = '☆';
-                li.innerHTML = `<span class="col-span-1">${index + 1}.</span><span class="col-span-2">${formatTime(score.finalScore)}</span><span class="col-span-1 text-center">${score.errors}</span><span class="col-span-1 text-right">${star}</span>`;
+                li.className = 'score-item grid grid-cols-12 gap-1 items-center p-2 text-[10px] sm:text-xs';
+                if (highlightId && (score.id === highlightId || score.date === highlightId)) {
+                    li.classList.add('new-highscore');
+                }
+                const initials = escapeHtml(score.initials || '—');
+                const seconds = Number.isInteger(score.time) ? score.time : score.finalScore || 0;
+                li.innerHTML = `<span class="col-span-1">${index + 1}.</span><span class="col-span-3 truncate">${initials}</span><span class="col-span-4">${formatTime(seconds)}</span><span class="col-span-2 text-center">${score.errors}</span><span class="col-span-2 text-right">${starMarkup(score.starType)}</span>`;
                 highscoreList.appendChild(li);
             });
         }
-        boardElement.classList.add('board-inactive');
-        keypad.classList.add('board-inactive');
-        highscoreContainer.classList.remove('hidden');
+        showHighscoreOverlay();
     }
 
     function init() {
@@ -762,7 +888,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', handleKeyboardInput);
         newGameBtn.addEventListener('click', startNewGame);
         difficultySelect.addEventListener('change', startNewGame);
-        highscoreContainer.addEventListener('click', startNewGame);
+        highscoreContainer.addEventListener('click', (e) => {
+            if (highscoreAwaitingInitials) return;
+            if (e.target.closest('#highscore-prompt')) return;
+            startNewGame();
+        });
         notesToggleCheckbox.addEventListener('change', toggleNoteMode);
         helperToggleCheckbox.addEventListener('change', toggleHelperMode);
         geminiHintBtn.addEventListener('click', handleHintInteraction);
@@ -801,6 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boardElement.addEventListener('touchend', handleDoubleTap);
         keypadNumbersElement.addEventListener('touchend', handleDoubleTap);
 
+        if (appVersionEl) appVersionEl.textContent = `v${VERSION}`;
         const savedLang = localStorage.getItem('sudokuLang');
         setLanguage(savedLang && translations[savedLang] ? savedLang : 'da');
         if (!loadGameState()) startNewGame();

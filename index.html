@@ -41,11 +41,14 @@
                     <div class="p-6 sm:p-8 rounded-lg w-full max-w-lg">
                         <h1 class="title text-2xl sm:text-3xl text-center mb-6" data-translate="highscores">HIGH SCORES</h1>
                         <div id="highscore-title" class="text-center text-cyan-300 mb-4 text-sm"></div>
-                        <div class="header-row grid grid-cols-5 gap-2 text-xs sm:text-sm mb-4 px-2">
+                        <p id="highscore-source" class="text-center text-[10px] text-cyan-200/80 mb-3 tracking-wide"></p>
+                        <div id="highscore-prompt" class="hidden mb-4"></div>
+                        <div id="highscore-headers" class="header-row grid grid-cols-12 gap-1 text-[10px] sm:text-xs mb-4 px-1">
                             <span class="col-span-1">#</span>
-                            <span class="col-span-2" data-translate="score">SCORE</span>
-                            <span class="col-span-1 text-center" data-translate="errorsHeader">FEJL</span>
-                            <span class="col-span-1 text-right"></span>
+                            <span class="col-span-3" data-translate="initialsHeader">NAVN</span>
+                            <span class="col-span-4" data-translate="timeHeader">TID</span>
+                            <span class="col-span-2 text-center" data-translate="errorsHeader">FEJL</span>
+                            <span class="col-span-2 text-right"></span>
                         </div>
                         <ol id="highscore-list" class="space-y-2 text-sm sm:text-base"></ol>
                     </div>
@@ -133,6 +136,7 @@
             </div>
         </div>
     </div>
+    <div id="app-version" class="app-version" aria-hidden="true"></div>
     <script type="module" src="/js/game.js"></script>
 </body>
 </html>

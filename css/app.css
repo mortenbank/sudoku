@@ -121,6 +121,84 @@ body {
         .highscore-container .header-row span { color: #00ffff; text-shadow: 0 0 5px #00ffff; }
         .highscore-container .score-item { color: #ffff00; }
         .highscore-container .new-highscore { background-color: rgba(255, 255, 0, 0.2); animation: pulse 1.5s infinite; }
+        .highscore-container .initials-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            pointer-events: auto;
+        }
+        .highscore-container .initials-label {
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            font-size: 0.7rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .highscore-container .initials-input {
+            width: 6.5rem;
+            background: #0a0a23;
+            border: 2px solid #00ffff;
+            color: #ffff00;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 0.35em;
+            padding: 0.55rem 0.4rem 0.55rem 0.7rem;
+            text-transform: uppercase;
+            outline: none;
+        }
+        .highscore-container .initials-input:focus {
+            box-shadow: 0 0 10px #00ffff;
+        }
+        .highscore-container .initials-error {
+            color: #ff6b8a;
+            font-size: 0.55rem;
+            text-align: center;
+            min-height: 0.8rem;
+            line-height: 1.5;
+        }
+        .highscore-container .initials-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .highscore-container .initials-submit {
+            background: #ffff00;
+            color: #0a0a23;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.65rem;
+            padding: 0.55rem 1rem;
+            border: none;
+            cursor: pointer;
+        }
+        .highscore-container .initials-submit:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
+        .highscore-container .initials-skip {
+            background: none;
+            border: none;
+            color: #00ffff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.5rem;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0.25rem;
+        }
+        .app-version {
+            position: fixed;
+            right: 0.7rem;
+            bottom: 0.45rem;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            color: rgb(148 163 184 / 0.5);
+            pointer-events: none;
+            user-select: none;
+            z-index: 5;
+            font-variant-numeric: tabular-nums;
+        }
         @keyframes pulse { 0% { background-color: rgba(255, 255, 0, 0.2); } 50% { background-color: rgba(255, 255, 0, 0.4); } 100% { background-color: rgba(255, 255, 0, 0.2); } }
         
         /* Modals (API Key and Hint) */
