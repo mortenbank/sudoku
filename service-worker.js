@@ -1,5 +1,5 @@
 // Author: Morten Bank
-const CACHE_NAME = 'sudoku-cache-v6';
+const CACHE_NAME = 'sudoku-cache-v8';
 
 const urlsToCache = [
     '/',
@@ -14,6 +14,9 @@ const urlsToCache = [
     '/js/generator.js',
     '/js/i18n.js',
     '/js/game.js',
+    '/js/version.js',
+    '/js/highscore-rules.js',
+    '/js/highscores-api.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -37,6 +40,11 @@ self.addEventListener('activate', (event) => {
 
 // Network-first so Netlify deploys and local edits are not stuck behind the cache.
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
     event.respondWith(
         fetch(event.request)
             .then((response) => {

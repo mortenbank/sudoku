@@ -2,7 +2,9 @@
 
 Klassisk Sudoku-PWA af [Morten Bank](https://sudoku-bank-net.netlify.app/). Dansk som primært sprog (`lang=da`).
 
-Brættet, timer, fejl, noter, hjælp, lokale hints, valgfri Gemini-træner, high scores, PWA og DA/EN/DE er bevaret.
+Brættet, timer, fejl, noter, hjælp, lokale hints, valgfri Gemini-træner, fælles high scores, PWA og DA/EN/DE er bevaret.
+
+Diskret versionsnummer vises nederst til højre (`v1.1.1`). Bump **begge** `package.json` `"version"` og `js/version.js` (`VERSION`) — `npm test` tjekker at de matcher.
 
 ## Sværhedsgrad = teknik, ikke færre tal
 
@@ -59,7 +61,20 @@ Testene kræver unik løsning og at hvert niveau rammer sin teknik-bane (ikke et
 
 ## Deploy dette GitHub-repo til Netlify
 
-Repoet er et rent statisk site (ingen build).
+Repoet er et statisk site (ingen frontend-build). High scores gemmes via **Netlify Functions + Netlify Blobs**.
+
+### Fælles high scores (Functions + Blobs)
+
+Ved sejr spørger overlayet om 2–3 initialer (A–Z / ÆØÅ / ÄÖÜ). Scoren sendes til `POST /api/highscores` (`netlify/functions/highscores.js`). Listen hentes med `GET /api/highscores?difficulty=…`.
+
+Sidste godkendte initialer huskes kun lokalt i `localStorage` (`sudokuInitials`) og udfyldes automatisk ved næste sejr, så man ikke skal taste dem igen. Listen selv er stadig den fælles server-board.
+
+- **Blobs:** site-scopet store `sudoku-highscores` (stærk consistency). Ét JSON-objekt pr. sværhedsgrad (`beginner` / `easy` / `medium` / `hard` / `expert`) med top 10.
+- **Ingen hemmeligheder:** offentlig læsning. Skriv valideres på serveren (difficulty-enum, initialer, tid 1–12 t, fejl 0–500). `finalScore` og stjerner beregnes server-side — klienten stoles ikke på.
+- **Offline:** hvis API’et fejler, gemmes scoren stadig lokalt (`sudokuHighScores_${difficulty}`) og overlayet viser lokale tider med en tydelig besked. Spillet går ikke i stykker.
+- Blobs kræver ingen provisioning eller betalt database — det følger med Netlify-sitet.
+
+Lokal `npm start` (python-server) har ingen functions; high scores falder da tilbage til localStorage. Brug `netlify dev` for at afprøve den delte liste.
 
 1. Log ind på [Netlify](https://app.netlify.com/) og vælg **Add new site → Import an existing project**.
 2. Tilknyt GitHub og vælg `mortenbank/sudoku`.
@@ -85,9 +100,13 @@ netlify init    # eller: netlify deploy --prod --dir=.
 ```
 index.html          # UI (dansk-først)
 css/app.css
+js/version.js       # VERSION (hold i trit med package.json)
+js/highscore-rules.js
+js/highscores-api.js
 js/sudoku.js        # unikhed + udfyldning
 js/techniques.js    # menneskelig solver / karakter
 js/generator.js     # grav + bedøm + regenerér til teknik-bane
 js/game.js          # bræt, timer, noter, hints, scores
+netlify/functions/highscores.js   # GET/POST /api/highscores → Blobs
 manifest.json + service-worker.js
 ```
