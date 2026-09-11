@@ -1,0 +1,10 @@
+{
+  "name": "sudoku",
+  "private": true,
+  "type": "module",
+  "description": "Sudoku PWA by Morten Bank — technique-graded difficulties",
+  "scripts": {
+    "test": "node --test --test-timeout=60000 tests/*.test.js",
+    "start": "python3 -m http.server 4173"
+  }
+}

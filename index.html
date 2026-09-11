@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Spil</title>
+    <meta name="author" content="Morten Bank">
+    <meta name="description" content="Et klassisk Sudoku-spil som PWA, med teknik-baseret sværhedsgrad.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1f2937">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kalam:wght@700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="bg-slate-700 text-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl mx-auto">
+        <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 justify-center lg:items-start">
+
+            <div class="w-full max-w-lg mx-auto lg:mx-0 relative">
+                <header class="text-center mb-4">
+                    <h1 class="text-3xl sm:text-4xl font-bold text-slate-100">Sudoku</h1>
+                    <p class="text-xs text-slate-400 tracking-widest -mt-1 sm:-mt-1.5" data-translate="subtitle">Et bank-net spil</p>
+                </header>
+                <div class="flex justify-between items-center mb-1 text-lg px-1">
+                    <div id="errors" class="font-semibold" data-translate="errors">Fejl: 0</div>
+                    <div id="timer" class="font-semibold transition-colors duration-300 font-mono tabular-nums">00:00</div>
+                </div>
+                <div id="sudoku-board" class="w-full aspect-square border-black bg-white rounded-lg shadow-xl shadow-black/40"></div>
+                <p id="technique-grade" class="text-xs text-slate-400 text-center mt-2 min-h-[1.25rem]"></p>
+                <div id="keypad" class="mt-4">
+                    <div id="keypad-numbers" class="grid grid-cols-9 gap-1 sm:gap-2"></div>
+                </div>
+                <div id="highscore-container" class="highscore-container hidden inset-0 flex items-center justify-center p-4">
+                    <div class="p-6 sm:p-8 rounded-lg w-full max-w-lg">
+                        <h1 class="title text-2xl sm:text-3xl text-center mb-6" data-translate="highscores">HIGH SCORES</h1>
+                        <div id="highscore-title" class="text-center text-cyan-300 mb-4 text-sm"></div>
+                        <div class="header-row grid grid-cols-5 gap-2 text-xs sm:text-sm mb-4 px-2">
+                            <span class="col-span-1">#</span>
+                            <span class="col-span-2" data-translate="score">SCORE</span>
+                            <span class="col-span-1 text-center" data-translate="errorsHeader">FEJL</span>
+                            <span class="col-span-1 text-right"></span>
+                        </div>
+                        <ol id="highscore-list" class="space-y-2 text-sm sm:text-base"></ol>
+                    </div>
+                </div>
+                <div id="loading-overlay" class="hidden absolute inset-0 bg-slate-800 bg-opacity-75 flex flex-col items-center justify-center rounded-lg z-20">
+                    <div class="loader"></div>
+                    <p class="text-white text-lg mt-4" data-translate="generating">Genererer puslespil...</p>
+                    <p id="loading-detail" class="text-slate-300 text-sm mt-2 px-4 text-center"></p>
+                </div>
+            </div>
+
+            <div class="w-full max-w-lg mx-auto lg:w-96 lg:max-w-none flex flex-col gap-4 lg:mt-24 relative">
+                <div class="p-4 bg-white text-slate-700 rounded-lg shadow-xl shadow-black/40 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold" data-translate="level">Niveau:</span>
+                        <select id="difficulty-select" class="bg-slate-50 border border-slate-300 rounded-md px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="beginner" data-translate="beginner">Begynder</option>
+                            <option value="easy" data-translate="easy">Let</option>
+                            <option value="medium" data-translate="medium" selected>Medium</option>
+                            <option value="hard" data-translate="hard">Svær</option>
+                            <option value="expert" data-translate="expert">Ekspert</option>
+                        </select>
+                    </div>
+
+                    <hr class="border-slate-300"/>
+
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold" data-translate="notes">Noter</span>
+                        <input type="checkbox" id="notes-toggle-checkbox" class="hidden toggle-checkbox">
+                        <label for="notes-toggle-checkbox" class="toggle-label cursor-pointer flex items-center bg-slate-300 rounded-full p-1 w-12 h-7 transition-colors duration-200">
+                            <div class="toggle-dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 relative">
+                            <span class="font-semibold" data-translate="help">Hjælp</span>
+                            <button id="gemini-hint-btn" class="text-xl hidden hover:opacity-75 transition-opacity" type="button">💡</button>
+                            <div id="hint-choice-menu">
+                                <button data-choice="local" data-translate="useLocalHint" class="whitespace-nowrap" type="button">Brug Lokalt Hint</button>
+                                <button data-choice="gemini" data-translate="useAITutor" class="whitespace-nowrap" type="button">Brug AI Træner</button>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="helper-toggle-checkbox" class="hidden toggle-checkbox">
+                        <label for="helper-toggle-checkbox" class="toggle-label cursor-pointer flex items-center bg-slate-300 rounded-full p-1 w-12 h-7 transition-colors duration-200">
+                            <div class="toggle-dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200"></div>
+                        </label>
+                    </div>
+
+                    <hr class="border-slate-300"/>
+
+                    <button id="new-game-btn" class="w-full bg-slate-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-600 transition-colors duration-200 shadow" data-translate="newGame">Nyt Spil</button>
+
+                    <div class="lang-selector text-center text-xs text-slate-400 mt-2">
+                        <a href="#" data-lang="da" class="hover:text-slate-600">DA</a> |
+                        <a href="#" data-lang="en" class="hover:text-slate-600">EN</a> |
+                        <a href="#" data-lang="de" class="hover:text-slate-600">DE</a>
+                    </div>
+                </div>
+
+                <div id="hint-modal" class="hidden absolute inset-0 z-50 flex items-end">
+                    <div id="hint-modal-content-wrapper" class="bg-slate-800/80 backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full relative text-center">
+                        <button id="close-hint-modal" class="absolute top-2 right-2 text-slate-400 hover:text-white text-3xl leading-none" type="button">&times;</button>
+                        <h2 id="hint-title" class="text-xl font-bold text-purple-400 mb-4" data-translate="aiTutor">AI Sudoku Træner</h2>
+                        <div id="hint-content" class="text-slate-200 text-left max-h-[150px] overflow-y-auto pr-2"></div>
+                        <div id="hint-loader" class="hidden">
+                             <div class="loader mx-auto"></div>
+                             <p class="mt-4" data-translate="analyzing">Analyserer brættet...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="api-key-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4" data-translate="apiKeyTitle">Indtast Gemini API Nøgle</h2>
+            <p class="mb-4 text-slate-300" data-translate="apiKeyDesc">For at bruge AI-træneren skal du bruge en gratis API-nøgle fra Google AI Studio.</p>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline mb-4 block" data-translate="apiKeyLink">Hent din nøgle her</a>
+            <input type="password" id="api-key-input" class="w-full bg-slate-700 border border-slate-500 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Indsæt din API nøgle...">
+            <div class="flex justify-end gap-4 mt-6">
+                <button id="cancel-api-key" class="px-4 py-2 bg-slate-600 rounded-md hover:bg-slate-500 transition-colors" data-translate="apiKeyCancel">Annuller</button>
+                <button id="save-api-key" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-500 transition-colors font-semibold" data-translate="apiKeySave">Gem</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/js/game.js"></script>
+</body>
+</html>
