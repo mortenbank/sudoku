@@ -1,5 +1,5 @@
 // Author: Morten Bank
-const CACHE_NAME = 'sudoku-cache-v4';
+const CACHE_NAME = 'sudoku-cache-v5';
 
 const urlsToCache = [
     '/',
@@ -14,14 +14,10 @@ const urlsToCache = [
     '/js/generator.js',
     '/js/i18n.js',
     '/js/game.js',
-    'https://cdn.tailwindcss.com',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kalam:wght@700&family=Press+Start+2P&display=swap',
 ];
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache.filter((u) => u.startsWith('/')))),
-    );
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
     self.skipWaiting();
 });
 
@@ -39,11 +35,17 @@ self.addEventListener('activate', (event) => {
     return self.clients.claim();
 });
 
+// Network-first so Netlify deploys and local edits are not stuck behind the cache.
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            if (response) return response;
-            return fetch(event.request).catch(() => undefined);
-        }),
+        fetch(event.request)
+            .then((response) => {
+                if (response && response.ok && event.request.method === 'GET') {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                }
+                return response;
+            })
+            .catch(() => caches.match(event.request)),
     );
 });

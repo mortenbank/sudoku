@@ -782,8 +782,8 @@ document.addEventListener('DOMContentLoaded', () => {
         boardElement.addEventListener('touchend', handleDoubleTap);
         keypadNumbersElement.addEventListener('touchend', handleDoubleTap);
 
-        const savedLang = localStorage.getItem('sudokuLang') || (navigator.language || 'da').split('-')[0] || 'da';
-        setLanguage(translations[savedLang] ? savedLang : 'da');
+        const savedLang = localStorage.getItem('sudokuLang');
+        setLanguage(savedLang && translations[savedLang] ? savedLang : 'da');
         if (!loadGameState()) startNewGame();
         else setupLoadedGame();
     }
