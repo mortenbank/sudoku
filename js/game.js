@@ -1,5 +1,5 @@
 import { generatePuzzle } from './generator.js';
-import { t, translations } from './i18n.js';
+import { t, translations, difficultyLabel } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
 import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
 import { VERSION } from './version.js';
@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hintClickCount = 0;
     let highscoreAwaitingInitials = false;
     let pendingWinScore = null;
+    let lastHighscoreView = null;
 
     function valuesGrid() {
         return boardData.map((row) => row.map((cell) => cell.value));
@@ -92,7 +93,41 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sudokuLang', lang);
         updateUIText(lang);
         updateGradeLabel();
-        if (highscoreAwaitingInitials && pendingWinScore) showInitialsPrompt();
+        refreshHighscoreCopy();
+    }
+
+    function setHighscoreDifficultyTitle(difficulty) {
+        if (!highscoreTitle) return;
+        highscoreTitle.dataset.difficulty = difficulty || '';
+        highscoreTitle.textContent = difficulty ? difficultyLabel(currentLang, difficulty).toUpperCase() : '';
+    }
+
+    function setHighscoreSourceLabel(source) {
+        if (!highscoreSource) return;
+        highscoreSource.dataset.source = source || '';
+        if (source === 'shared') highscoreSource.textContent = t(currentLang, 'highscoreShared');
+        else if (source === 'local-error') highscoreSource.textContent = t(currentLang, 'highscoreLoadError');
+        else if (source === 'local') highscoreSource.textContent = t(currentLang, 'highscoreLocalFallback');
+        else highscoreSource.textContent = '';
+    }
+
+    function refreshHighscoreCopy() {
+        if (!highscoreContainer || highscoreContainer.classList.contains('hidden')) return;
+        if (highscoreAwaitingInitials && pendingWinScore) {
+            showInitialsPrompt();
+            return;
+        }
+        if (lastHighscoreView) {
+            displayHighScores(
+                lastHighscoreView.difficulty,
+                lastHighscoreView.highlightId,
+                lastHighscoreView.scores,
+                lastHighscoreView.source,
+            );
+        } else if (highscoreTitle?.dataset.difficulty) {
+            setHighscoreDifficultyTitle(highscoreTitle.dataset.difficulty);
+            setHighscoreSourceLabel(highscoreSource?.dataset.source);
+        }
     }
 
     function updateGradeLabel() {
@@ -294,11 +329,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function startNewGame() {
         highscoreAwaitingInitials = false;
         pendingWinScore = null;
+        lastHighscoreView = null;
         if (highscorePrompt) {
             highscorePrompt.classList.add('hidden');
             highscorePrompt.innerHTML = '';
         }
-        if (highscoreSource) highscoreSource.textContent = '';
+        setHighscoreDifficultyTitle('');
+        setHighscoreSourceLabel('');
         highscoreContainer.classList.add('hidden');
         boardElement.classList.remove('board-inactive');
         keypad.classList.remove('board-inactive');
@@ -759,8 +796,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showInitialsPrompt() {
         highscoreAwaitingInitials = true;
-        highscoreTitle.textContent = t(currentLang, pendingWinScore.difficulty).toUpperCase();
-        highscoreSource.textContent = '';
+        lastHighscoreView = null;
+        setHighscoreDifficultyTitle(pendingWinScore.difficulty);
+        setHighscoreSourceLabel('');
         highscoreList.innerHTML = '';
         highscoreHeaders.classList.add('hidden');
         highscorePrompt.classList.remove('hidden');
@@ -843,13 +881,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayHighScores(difficulty, highlightId, scores, source) {
         highscoreAwaitingInitials = false;
+        lastHighscoreView = { difficulty, highlightId, scores, source };
         highscorePrompt.classList.add('hidden');
         highscorePrompt.innerHTML = '';
         highscoreHeaders.classList.remove('hidden');
-        highscoreTitle.textContent = t(currentLang, difficulty).toUpperCase();
-        if (source === 'shared') highscoreSource.textContent = t(currentLang, 'highscoreShared');
-        else if (source === 'local-error') highscoreSource.textContent = t(currentLang, 'highscoreLoadError');
-        else highscoreSource.textContent = t(currentLang, 'highscoreLocalFallback');
+        setHighscoreDifficultyTitle(difficulty);
+        setHighscoreSourceLabel(source);
         highscoreList.innerHTML = '';
         if (!scores || scores.length === 0) {
             highscoreList.innerHTML = `<li class="text-center text-yellow-300 p-4">${t(currentLang, 'noScores')}</li>`;

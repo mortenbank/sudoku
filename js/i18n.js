@@ -33,7 +33,7 @@ export const translations = {
         initialsSkip: 'Skip',
         initialsInvalid: 'Use 2–3 letters (A–Z, ÆØÅ).',
         highscoreSaving: 'Saving…',
-        highscoreShared: 'Shared high scores',
+        highscoreShared: 'Global highscore',
         highscoreLocalFallback: 'Server unavailable. Showing local scores.',
         highscoreLoadError: 'Could not load shared scores.',
         hintError: 'Error fetching hint. Check your connection and try again.',
@@ -86,9 +86,9 @@ export const translations = {
         initialsSkip: 'Spring over',
         initialsInvalid: 'Brug 2–3 bogstaver (A–Z, ÆØÅ).',
         highscoreSaving: 'Gemmer…',
-        highscoreShared: 'Fælles top-scorer',
+        highscoreShared: 'Global highscore',
         highscoreLocalFallback: 'Serveren svarede ikke. Viser lokale tider.',
-        highscoreLoadError: 'Kunne ikke hente fælles tider.',
+        highscoreLoadError: 'Kunne ikke hente globale tider.',
         hintError: 'Der opstod en fejl under hentning af hint. Tjek din forbindelse og prøv igen.',
         invalidKey: 'API-nøgle er ugyldig eller mangler. Indsæt venligst en gyldig nøgle.',
         useLocalHint: 'Brug Lokalt Hint',
@@ -139,7 +139,7 @@ export const translations = {
         initialsSkip: 'Überspringen',
         initialsInvalid: '2–3 Buchstaben (A–Z, ÆØÅ).',
         highscoreSaving: 'Speichern…',
-        highscoreShared: 'Gemeinsame Bestenliste',
+        highscoreShared: 'Global Highscore',
         highscoreLocalFallback: 'Server nicht erreichbar. Lokale Punkte.',
         highscoreLoadError: 'Bestenliste konnte nicht geladen werden.',
         hintError: 'Fehler beim Abrufen des Tipps. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
@@ -167,4 +167,9 @@ export function t(lang, key, ...args) {
         text = text.replace(`{${i}}`, String(arg));
     });
     return text;
+}
+
+/** Localized difficulty name for the highscore title/board. */
+export function difficultyLabel(lang, difficulty) {
+    return t(lang, difficulty);
 }

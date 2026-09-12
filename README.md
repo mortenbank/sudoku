@@ -4,7 +4,7 @@ Klassisk Sudoku-PWA af [Morten Bank](https://sudoku-bank-net.netlify.app/). Dans
 
 Brættet, timer, fejl, noter, hjælp, lokale hints, valgfri Gemini-træner, fælles high scores, PWA og DA/EN/DE er bevaret.
 
-Diskret versionsnummer vises nederst til højre (`v1.1.1`). Bump **begge** `package.json` `"version"` og `js/version.js` (`VERSION`) — `npm test` tjekker at de matcher.
+Diskret versionsnummer vises nederst til højre (`v1.1.2`). Bump **begge** `package.json` `"version"` og `js/version.js` (`VERSION`) — `npm test` tjekker at de matcher.
 
 ## Sværhedsgrad = teknik, ikke færre tal
 
