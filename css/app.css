@@ -189,8 +189,8 @@ body {
         }
         .app-version {
             position: fixed;
-            right: 0.7rem;
-            bottom: 0.45rem;
+            right: calc(1.25rem + env(safe-area-inset-right, 0px));
+            bottom: calc(1.1rem + env(safe-area-inset-bottom, 0px));
             font-size: 0.65rem;
             letter-spacing: 0.04em;
             color: rgb(148 163 184 / 0.5);
