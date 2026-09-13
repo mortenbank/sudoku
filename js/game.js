@@ -9,7 +9,7 @@ import {
     soleCandidateNotes,
 } from './techniques.js';
 import { VERSION } from './version.js';
-import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials } from './highscore-rules.js';
+import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials, notePlacementCost } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
 
 if ('serviceWorker' in navigator) {
@@ -509,7 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
             possible.advanced.forEach((num) => {
                 cell.notes[num] = { isIncorrect: false, isAdvanced: true };
             });
-            recordNotePlacements(possible.normal.length + possible.advanced.length);
+            // Double-tap / right-click fill: flat 10s for the cell, not 1s × candidates.
+            recordNotePlacements(notePlacementCost({
+                cellFill: true,
+                placed: possible.normal.length + possible.advanced.length,
+            }));
         }
         drawBoard();
     }
@@ -579,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cell.notes[num]) delete cell.notes[num];
             else {
                 cell.notes[num] = { isIncorrect: !isNoteValid(row, col, num) };
-                recordNotePlacements(1);
+                recordNotePlacements(notePlacementCost({ placed: 1 }));
             }
         } else {
             cell.value = num;
