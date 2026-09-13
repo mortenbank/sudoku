@@ -5,8 +5,15 @@ export const MAX_TIME = 12 * 60 * 60;
 export const MAX_ERRORS = 500;
 export const MAX_NOTE_COUNT = 5000;
 export const MAX_HINT_COUNT = 200;
-export const ERROR_PENALTY = 120;
+/** Seconds added per error — harsh enough that records are hard to beat with mistakes. */
+export const ERROR_PENALTY = 300;
+/** Seconds per individually toggled note digit. */
 export const NOTE_PENALTY = 1;
+/**
+ * Flat seconds for a double-tap / right-click that fills all candidates in one cell.
+ * Charged once per cell, not 1× the number of digits written.
+ */
+export const NOTE_FILL_PENALTY = 10;
 export const HINT_PENALTY = 60;
 export const INITIALS_MIN = 2;
 export const INITIALS_MAX = 3;
@@ -63,11 +70,41 @@ function optionalCount(value, max) {
     return value;
 }
 
-/** Missing note/hint counts from older entries count as 0. */
-export function computedFinalScore(time, errors, noteCount = 0, hintCount = 0) {
+/**
+ * Seconds to add to `noteCount` for a note action.
+ * Individual toggles: 1s each. Double-tap / right-click cell fill: 10s once (not per digit).
+ * The client accumulates this into `noteCount`; the server only multiplies by NOTE_PENALTY.
+ */
+export function notePlacementCost({ cellFill = false, placed = 0 } = {}) {
+    if (!Number.isInteger(placed) || placed <= 0) return 0;
+    return cellFill ? NOTE_FILL_PENALTY : placed * NOTE_PENALTY;
+}
+
+/** Penalty seconds already applied to the visible clock (and to `noteCount`). */
+export function penaltySeconds(errors = 0, noteCount = 0, hintCount = 0) {
+    const errs = Number.isInteger(errors) && errors > 0 ? errors : 0;
     const notes = Number.isInteger(noteCount) && noteCount > 0 ? noteCount : 0;
     const hints = Number.isInteger(hintCount) && hintCount > 0 ? hintCount : 0;
-    return time + errors * ERROR_PENALTY + notes * NOTE_PENALTY + hints * HINT_PENALTY;
+    return errs * ERROR_PENALTY + notes * NOTE_PENALTY + hints * HINT_PENALTY;
+}
+
+/**
+ * Play time to send to the server when the displayed clock already includes penalties.
+ * Avoids double-counting: server still does `time + errors×300 + notes + hints×60`.
+ */
+export function rawPlayTime(displayedSeconds, errors = 0, noteCount = 0, hintCount = 0) {
+    if (!Number.isInteger(displayedSeconds)) return MIN_TIME;
+    const raw = displayedSeconds - penaltySeconds(errors, noteCount, hintCount);
+    return Math.max(MIN_TIME, raw);
+}
+
+/**
+ * Lower is better. `time` is raw play seconds (clock minus penalties).
+ * `noteCount` is accumulated note-penalty seconds (1 per single toggle, 10 per cell fill).
+ * Missing note/hint counts from older Blobs rows count as 0 — those rows are never rewritten.
+ */
+export function computedFinalScore(time, errors, noteCount = 0, hintCount = 0) {
+    return time + penaltySeconds(errors, noteCount, hintCount);
 }
 
 export function starTypeFor(errors, noteUsed, helperUsed) {

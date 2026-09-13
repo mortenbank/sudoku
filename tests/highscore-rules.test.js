@@ -8,6 +8,12 @@ import {
     writeRememberedInitials,
     validateScorePayload,
     computedFinalScore,
+    notePlacementCost,
+    penaltySeconds,
+    rawPlayTime,
+    ERROR_PENALTY,
+    NOTE_FILL_PENALTY,
+    HINT_PENALTY,
     starTypeFor,
     rankAndTrim,
     looksLikeScore,
@@ -106,10 +112,29 @@ describe('score payload validation', () => {
 });
 
 describe('ranking and stars', () => {
-    it('applies the 2-minute error penalty plus note and hint costs', () => {
-        assert.equal(computedFinalScore(100, 2), 340);
+    it('applies the 5-minute error penalty plus note and hint costs', () => {
+        assert.equal(ERROR_PENALTY, 300);
+        assert.equal(computedFinalScore(100, 2), 700);
         assert.equal(computedFinalScore(100, 0, 5, 1), 165);
-        assert.equal(computedFinalScore(100, 1, undefined, undefined), 220);
+        assert.equal(computedFinalScore(100, 1, undefined, undefined), 400);
+    });
+
+    it('charges 10s once for a double-tap cell fill, 1s per single note', () => {
+        assert.equal(NOTE_FILL_PENALTY, 10);
+        assert.equal(notePlacementCost({ cellFill: true, placed: 6 }), 10);
+        assert.equal(notePlacementCost({ cellFill: true, placed: 1 }), 10);
+        assert.equal(notePlacementCost({ cellFill: true, placed: 0 }), 0);
+        assert.equal(notePlacementCost({ placed: 1 }), 1);
+        assert.equal(notePlacementCost({ placed: 3 }), 3);
+        assert.equal(computedFinalScore(100, 0, notePlacementCost({ cellFill: true, placed: 8 }), 0), 110);
+    });
+
+    it('strips baked-in clock penalties so the server does not double-count', () => {
+        assert.equal(HINT_PENALTY, 60);
+        assert.equal(penaltySeconds(1, 10, 1), 300 + 10 + 60);
+        assert.equal(rawPlayTime(470, 1, 10, 1), 100);
+        assert.equal(computedFinalScore(rawPlayTime(470, 1, 10, 1), 1, 10, 1), 470);
+        assert.equal(rawPlayTime(5, 1, 0, 0), 1);
     });
 
     it('awards gold / silver / none like the existing UI', () => {

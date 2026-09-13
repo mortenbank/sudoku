@@ -30,7 +30,7 @@
                 </header>
                 <div class="flex justify-between items-center mb-1 text-lg px-1">
                     <div id="errors" class="font-semibold" data-translate="errors">Fejl: 0</div>
-                    <div id="timer" class="font-semibold transition-colors duration-300 font-mono tabular-nums">00:00</div>
+                    <div id="timer" class="font-semibold font-mono tabular-nums">00:00</div>
                 </div>
                 <div id="sudoku-board" class="w-full aspect-square border-black bg-white rounded-lg shadow-xl shadow-black/40"></div>
                 <p id="technique-grade" class="text-xs text-slate-400 text-center mt-2 min-h-[1.25rem]"></p>
@@ -132,9 +132,9 @@
             <button id="close-rules-modal" class="rules-close" type="button" aria-label="Luk">&times;</button>
             <h2 id="rules-title" class="text-2xl font-bold mb-4" data-translate="rulesTitle">Regler</h2>
             <h3 class="rules-heading" data-translate="rulesScoringTitle">Score</h3>
-            <p class="rules-text" data-translate="rulesScoring">Lavere er bedre. Score = tid + fejl×2 min + noter×1 sek + hints×1 min. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.</p>
+            <p class="rules-text" data-translate="rulesScoring">Lavere er bedre. Straffe lægges på uret mens du spiller. Hver fejl lægger 5 minutter (300 sekunder) til. Hvert hint lægger 1 minut til. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.</p>
             <h3 class="rules-heading" data-translate="rulesNotesTitle">Noter</h3>
-            <p class="rules-text" data-translate="rulesNotes">Skriv mulige tal i tomme felter (højreklik udfylder alle kandidater). Hver note koster 1 sekund. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.</p>
+            <p class="rules-text" data-translate="rulesNotes">Skriv mulige tal i tomme felter. Dobbelttryk eller højreklik udfylder alle kandidater og lægger 10 sekunder til uret for det felt — uanset antal tal. Hver enkelt note (håndsat) lægger 1 sekund til. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.</p>
             <h3 class="rules-heading" data-translate="rulesHelpTitle">Hjælp</h3>
             <p class="rules-text" data-translate="rulesHelp">Fremhæver tal på brættet. Grå noter kan elimineres med det samme. En fed note er det eneste mulige tal i feltet — eller det eneste sted i rækken, kolonnen eller boksen.</p>
             <p class="rules-text rules-stars" data-translate="rulesStars">Guld: 0 fejl, ingen noter, ingen hjælp. Sølv: 0 fejl, noter brugt, ingen hjælp.</p>

@@ -9,7 +9,7 @@ import {
     soleCandidateNotes,
 } from './techniques.js';
 import { VERSION } from './version.js';
-import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials } from './highscore-rules.js';
+import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials, notePlacementCost, ERROR_PENALTY, HINT_PENALTY, penaltySeconds, rawPlayTime } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
 
 if ('serviceWorker' in navigator) {
@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let highscoreAwaitingInitials = false;
     let pendingWinScore = null;
     let lastHighscoreView = null;
+    let timerIncludesPenalties = true;
 
     function valuesGrid() {
         return boardData.map((row) => row.map((cell) => cell.value));
@@ -362,9 +363,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${minutes}:${secs}`;
     }
 
+    function showTimer() {
+        timerElement.textContent = formatTime(secondsElapsed);
+    }
+
+    function flashTimerPenalty() {
+        if (!timerElement) return;
+        timerElement.classList.remove('timer-penalty-flash');
+        void timerElement.offsetWidth;
+        timerElement.classList.add('timer-penalty-flash');
+    }
+
+    /**
+     * Fold a scoring penalty into the running clock immediately.
+     * Submit later sends rawPlayTime(clock, errors, notes, hints) so the server
+     * formula (time + errors×300 + notes + hints×60) does not double-count.
+     */
+    function addTimerPenalty(seconds) {
+        if (!Number.isInteger(seconds) || seconds <= 0) return;
+        secondsElapsed += seconds;
+        timerIncludesPenalties = true;
+        showTimer();
+        flashTimerPenalty();
+    }
+
     function updateTimer() {
         secondsElapsed++;
-        timerElement.textContent = formatTime(secondsElapsed);
+        showTimer();
     }
 
     function startGameTimer() {
@@ -437,7 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUIText(currentLang);
         updateGradeLabel();
         timerElement.textContent = '00:00';
-        timerElement.classList.remove('text-red-600');
+        timerElement.classList.remove('text-red-600', 'timer-penalty-flash');
+        timerIncludesPenalties = true;
         drawBoard();
         updateKeypadUI();
     }
@@ -468,7 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSavedGameState();
         isGameActive = false;
         pendingWinScore = {
-            time: secondsElapsed,
+            // Clock already includes penalties; send raw play time so the server does not double-count.
+            time: rawPlayTime(secondsElapsed, errorCount, noteCount, hintCount),
             errors: errorCount,
             difficulty: difficultySelect.value,
             noteUsed: wasNoteUsed,
@@ -509,7 +536,11 @@ document.addEventListener('DOMContentLoaded', () => {
             possible.advanced.forEach((num) => {
                 cell.notes[num] = { isIncorrect: false, isAdvanced: true };
             });
-            recordNotePlacements(possible.normal.length + possible.advanced.length);
+            // Double-tap / right-click fill: flat 10s for the cell, not 1s × candidates.
+            recordNotePlacements(notePlacementCost({
+                cellFill: true,
+                placed: possible.normal.length + possible.advanced.length,
+            }));
         }
         drawBoard();
     }
@@ -579,7 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cell.notes[num]) delete cell.notes[num];
             else {
                 cell.notes[num] = { isIncorrect: !isNoteValid(row, col, num) };
-                recordNotePlacements(1);
+                recordNotePlacements(notePlacementCost({ placed: 1 }));
             }
         } else {
             cell.value = num;
@@ -587,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (num !== solution[row][col]) {
                 cell.isIncorrect = true;
                 errorCount++;
+                addTimerPenalty(ERROR_PENALTY);
                 updateUIText(currentLang);
                 setTimeout(() => {
                     if (boardData[row][col].value === num && boardData[row][col].isIncorrect) {
@@ -746,11 +778,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (n <= 0) return;
         noteCount += n;
         wasNoteUsed = true;
+        addTimerPenalty(n);
     }
 
     function recordHintUse() {
         hintCount += 1;
         wasHelperUsed = true;
+        addTimerPenalty(HINT_PENALTY);
     }
 
     function handleHintRequest() {
@@ -802,6 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 noteCount,
                 hintCount,
                 currentGrade,
+                timerIncludesPenalties: true,
             }),
         );
     }
@@ -825,6 +860,11 @@ document.addEventListener('DOMContentLoaded', () => {
             noteCount = Number.isInteger(gs.noteCount) ? gs.noteCount : 0;
             hintCount = Number.isInteger(gs.hintCount) ? gs.hintCount : 0;
             currentGrade = gs.currentGrade || null;
+            timerIncludesPenalties = Boolean(gs.timerIncludesPenalties);
+            if (!timerIncludesPenalties) {
+                secondsElapsed += penaltySeconds(errorCount, noteCount, hintCount);
+                timerIncludesPenalties = true;
+            }
             return true;
         } catch {
             localStorage.removeItem('sudokuGameState');
@@ -1004,7 +1044,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.classList.add('new-highscore');
                 }
                 const initials = escapeHtml(score.initials || '—');
-                const seconds = Number.isInteger(score.time) ? score.time : score.finalScore || 0;
+                const seconds = Number.isInteger(score.finalScore)
+                    ? score.finalScore
+                    : Number.isInteger(score.time)
+                      ? score.time
+                      : 0;
                 li.innerHTML = `<span class="col-span-1">${index + 1}.</span><span class="col-span-3 truncate">${initials}</span><span class="col-span-4">${formatTime(seconds)}</span><span class="col-span-2 text-center">${score.errors}</span><span class="col-span-2 text-right">${starMarkup(score.starType)}</span>`;
                 highscoreList.appendChild(li);
             });

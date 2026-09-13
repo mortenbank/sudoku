@@ -84,7 +84,7 @@ describe('highscore function handler', () => {
             memoryStore(),
         );
         const data = await res.json();
-        assert.equal(data.entry.finalScore, 330);
+        assert.equal(data.entry.finalScore, 690);
         assert.equal(data.entry.starType, 'none');
         assert.equal(data.entry.noteCount, 0);
         assert.equal(data.entry.hintCount, 0);
@@ -106,7 +106,7 @@ describe('highscore function handler', () => {
             memoryStore(),
         );
         const data = await res.json();
-        assert.equal(data.entry.finalScore, 100 + 120 + 7 + 120);
+        assert.equal(data.entry.finalScore, 100 + 300 + 7 + 120);
         assert.equal(data.entry.noteCount, 7);
         assert.equal(data.entry.hintCount, 2);
     });
