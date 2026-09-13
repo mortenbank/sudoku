@@ -35,6 +35,8 @@ export async function submitSharedHighScore(payload) {
             errors: payload.errors,
             noteUsed: Boolean(payload.noteUsed),
             helperUsed: Boolean(payload.helperUsed),
+            noteCount: Number.isInteger(payload.noteCount) ? payload.noteCount : 0,
+            hintCount: Number.isInteger(payload.hintCount) ? payload.hintCount : 0,
         }),
     });
     if (!res.ok) throw new Error(`http_${res.status}`);

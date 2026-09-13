@@ -51,6 +51,19 @@ export const translations = {
         unitRow: 'row {0}',
         unitCol: 'column {0}',
         unitBox: 'box {0}',
+        rulesBtnLabel: 'Rules',
+        rulesTitle: 'Rules',
+        rulesScoringTitle: 'Score',
+        rulesScoring:
+            'Lower is better. Score = time + errors×2 min + notes×1 sec + hints×1 min. The Help toggle makes the clock run at double speed.',
+        rulesNotesTitle: 'Notes',
+        rulesNotes:
+            'Write possible digits in empty cells (right-click fills all candidates). Each placed note costs 1 second. With Help on, notes that can be eliminated immediately turn gray.',
+        rulesHelpTitle: 'Help',
+        rulesHelp:
+            'Highlights filled digits. Gray notes can be eliminated right away (pointing/claiming). A bold note is the only possible digit in that cell — or the only place for that digit in its row, column, or box.',
+        rulesStars: 'Gold: 0 errors, no notes, no help. Silver: 0 errors, notes used, no help.',
+        rulesClose: 'Close',
     },
     da: {
         subtitle: 'Et bank-net spil',
@@ -104,6 +117,19 @@ export const translations = {
         unitRow: 'række {0}',
         unitCol: 'kolonne {0}',
         unitBox: 'boks {0}',
+        rulesBtnLabel: 'Regler',
+        rulesTitle: 'Regler',
+        rulesScoringTitle: 'Score',
+        rulesScoring:
+            'Lavere er bedre. Score = tid + fejl×2 min + noter×1 sek + hints×1 min. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.',
+        rulesNotesTitle: 'Noter',
+        rulesNotes:
+            'Skriv mulige tal i tomme felter (højreklik udfylder alle kandidater). Hver note koster 1 sekund. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.',
+        rulesHelpTitle: 'Hjælp',
+        rulesHelp:
+            'Fremhæver tal på brættet. Grå noter kan elimineres med det samme (pointing/claiming). En fed note er det eneste mulige tal i feltet — eller det eneste sted i rækken, kolonnen eller boksen.',
+        rulesStars: 'Guld: 0 fejl, ingen noter, ingen hjælp. Sølv: 0 fejl, noter brugt, ingen hjælp.',
+        rulesClose: 'Luk',
     },
     de: {
         subtitle: 'Ein bank-net Spiel',
@@ -157,6 +183,19 @@ export const translations = {
         unitRow: 'Zeile {0}',
         unitCol: 'Spalte {0}',
         unitBox: 'Block {0}',
+        rulesBtnLabel: 'Regeln',
+        rulesTitle: 'Regeln',
+        rulesScoringTitle: 'Punkte',
+        rulesScoring:
+            'Niedriger ist besser. Punkte = Zeit + Fehler×2 Min + Notizen×1 Sek + Hinweise×1 Min. Der Hilfe-Schalter lässt die Uhr doppelt so schnell laufen.',
+        rulesNotesTitle: 'Notizen',
+        rulesNotes:
+            'Schreibe mögliche Ziffern in leere Zellen (Rechtsklick füllt alle Kandidaten). Jede gesetzte Notiz kostet 1 Sekunde. Mit Hilfe werden sofort eliminierbare Notizen grau.',
+        rulesHelpTitle: 'Hilfe',
+        rulesHelp:
+            'Hebt gesetzte Ziffern hervor. Graue Notizen lassen sich sofort streichen (Pointing/Claiming). Eine fette Notiz ist die einzige mögliche Ziffer in der Zelle — oder der einzige Platz in Zeile, Spalte oder Block.',
+        rulesStars: 'Gold: 0 Fehler, keine Notizen, keine Hilfe. Silber: 0 Fehler, Notizen benutzt, keine Hilfe.',
+        rulesClose: 'Schließen',
     },
 };
 

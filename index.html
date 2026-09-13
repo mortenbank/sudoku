@@ -102,10 +102,13 @@
 
                     <button id="new-game-btn" class="w-full bg-slate-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-600 transition-colors duration-200 shadow" data-translate="newGame">Nyt Spil</button>
 
-                    <div class="lang-selector text-center text-xs text-slate-400 mt-2">
-                        <a href="#" data-lang="da" class="hover:text-slate-600">DA</a> |
-                        <a href="#" data-lang="en" class="hover:text-slate-600">EN</a> |
-                        <a href="#" data-lang="de" class="hover:text-slate-600">DE</a>
+                    <div class="flex items-center justify-center gap-3 mt-2">
+                        <div class="lang-selector text-center text-xs text-slate-400">
+                            <a href="#" data-lang="da" class="hover:text-slate-600">DA</a> |
+                            <a href="#" data-lang="en" class="hover:text-slate-600">EN</a> |
+                            <a href="#" data-lang="de" class="hover:text-slate-600">DE</a>
+                        </div>
+                        <button id="rules-btn" type="button" class="rules-btn" aria-label="Regler" title="Regler">?</button>
                     </div>
                 </div>
 
@@ -124,6 +127,19 @@
         </div>
     </div>
 
+    <div id="rules-modal" class="modal-backdrop hidden">
+        <div class="modal-content rules-modal-content" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+            <button id="close-rules-modal" class="rules-close" type="button" aria-label="Luk">&times;</button>
+            <h2 id="rules-title" class="text-2xl font-bold mb-4" data-translate="rulesTitle">Regler</h2>
+            <h3 class="rules-heading" data-translate="rulesScoringTitle">Score</h3>
+            <p class="rules-text" data-translate="rulesScoring">Lavere er bedre. Score = tid + fejl×2 min + noter×1 sek + hints×1 min. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.</p>
+            <h3 class="rules-heading" data-translate="rulesNotesTitle">Noter</h3>
+            <p class="rules-text" data-translate="rulesNotes">Skriv mulige tal i tomme felter (højreklik udfylder alle kandidater). Hver note koster 1 sekund. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.</p>
+            <h3 class="rules-heading" data-translate="rulesHelpTitle">Hjælp</h3>
+            <p class="rules-text" data-translate="rulesHelp">Fremhæver tal på brættet. Grå noter kan elimineres med det samme. En fed note er det eneste mulige tal i feltet — eller det eneste sted i rækken, kolonnen eller boksen.</p>
+            <p class="rules-text rules-stars" data-translate="rulesStars">Guld: 0 fejl, ingen noter, ingen hjælp. Sølv: 0 fejl, noter brugt, ingen hjælp.</p>
+        </div>
+    </div>
     <div id="api-key-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <h2 class="text-2xl font-bold mb-4" data-translate="apiKeyTitle">Indtast Gemini API Nøgle</h2>

@@ -70,6 +70,8 @@ export async function handleHighscores(req, store) {
             errors: parsed.errors,
             noteUsed: parsed.noteUsed,
             helperUsed: parsed.helperUsed,
+            noteCount: parsed.noteCount,
+            hintCount: parsed.hintCount,
             date: Date.now(),
         });
 

@@ -84,8 +84,43 @@ describe('highscore function handler', () => {
             memoryStore(),
         );
         const data = await res.json();
-        assert.equal(data.entry.finalScore, 150);
+        assert.equal(data.entry.finalScore, 330);
         assert.equal(data.entry.starType, 'none');
+        assert.equal(data.entry.noteCount, 0);
+        assert.equal(data.entry.hintCount, 0);
+    });
+
+    it('adds note and hint penalties server-side', async () => {
+        const res = await handleHighscores(
+            post({
+                difficulty: 'easy',
+                initials: 'MB',
+                time: 100,
+                errors: 1,
+                noteUsed: true,
+                helperUsed: true,
+                noteCount: 7,
+                hintCount: 2,
+                finalScore: 1,
+            }),
+            memoryStore(),
+        );
+        const data = await res.json();
+        assert.equal(data.entry.finalScore, 100 + 120 + 7 + 120);
+        assert.equal(data.entry.noteCount, 7);
+        assert.equal(data.entry.hintCount, 2);
+    });
+
+    it('keeps older stored rows that lack noteCount and hintCount', async () => {
+        const store = memoryStore({
+            medium: {
+                scores: [{ initials: 'OLD', time: 80, errors: 0, finalScore: 80, date: 1 }],
+            },
+        });
+        const listed = await (await handleHighscores(get('medium'), store)).json();
+        assert.equal(listed.scores.length, 1);
+        assert.equal(listed.scores[0].initials, 'OLD');
+        assert.equal(listed.scores[0].finalScore, 80);
     });
 
     it('rejects absurd or malformed posts', async () => {

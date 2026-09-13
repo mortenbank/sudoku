@@ -1,7 +1,13 @@
 import { generatePuzzle } from './generator.js';
 import { t, translations, difficultyLabel } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
-import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
+import {
+    TECHNIQUE_LABELS,
+    candidatesForCell,
+    helperNoteClassList,
+    lockedCandidateEliminations,
+    soleCandidateNotes,
+} from './techniques.js';
 import { VERSION } from './version.js';
 import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
@@ -44,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveApiKeyBtn = document.getElementById('save-api-key');
     const cancelApiKeyBtn = document.getElementById('cancel-api-key');
     const hintChoiceMenu = document.getElementById('hint-choice-menu');
+    const rulesBtn = document.getElementById('rules-btn');
+    const rulesModal = document.getElementById('rules-modal');
+    const closeRulesModalBtn = document.getElementById('close-rules-modal');
 
     let boardData = [];
     let solution = [];
@@ -52,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isHelperMode = false;
     let wasNoteUsed = false;
     let wasHelperUsed = false;
+    let noteCount = 0;
+    let hintCount = 0;
     let isGameActive = false;
     let errorCount = 0;
     let timerInterval;
@@ -87,6 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
         langSelector.querySelectorAll('a').forEach((a) => {
             a.classList.toggle('active', a.dataset.lang === lang);
         });
+        if (rulesBtn) {
+            const label = t(lang, 'rulesBtnLabel');
+            rulesBtn.setAttribute('aria-label', label);
+            rulesBtn.setAttribute('title', label);
+        }
+        if (closeRulesModalBtn) closeRulesModalBtn.setAttribute('aria-label', t(lang, 'rulesClose'));
     }
 
     function setLanguage(lang) {
@@ -209,9 +226,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return possible;
     }
 
+    function helperOverlayMaps() {
+        if (!isHelperMode) return { advancedNotesMap: {}, soleNotesMap: {} };
+        return {
+            advancedNotesMap: lockedCandidateEliminations(valuesGrid()),
+            soleNotesMap: soleCandidateNotes(valuesGrid()),
+        };
+    }
+
+    function syncAdvancedNoteFlags(advancedNotesMap) {
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = boardData[r][c];
+                if (cell.value !== 0) continue;
+                const advancedSet = advancedNotesMap[`${r},${c}`] || {};
+                for (const key of Object.keys(cell.notes)) {
+                    const num = Number(key);
+                    if (!cell.notes[num]) continue;
+                    cell.notes[num].isAdvanced = Boolean(advancedSet[num]);
+                }
+            }
+        }
+    }
+
     function drawBoard() {
         boardElement.innerHTML = '';
-        const advancedNotesMap = isHelperMode ? lockedCandidateEliminations(valuesGrid()) : {};
+        const { advancedNotesMap, soleNotesMap } = helperOverlayMaps();
+        if (isHelperMode) syncAdvancedNoteFlags(advancedNotesMap);
 
         for (let i = 0; i < size * size; i++) {
             const r = Math.floor(i / size);
@@ -231,12 +272,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (Object.keys(cell.notes).length > 0) {
                 const noteGrid = document.createElement('div');
                 noteGrid.className = 'note-grid';
+                const key = `${r},${c}`;
+                const advancedSet = advancedNotesMap[key] || {};
+                const soleSet = soleNotesMap[key] || {};
                 for (let n = 1; n <= 9; n++) {
                     const noteSpan = document.createElement('span');
                     if (cell.notes[n]) {
                         noteSpan.textContent = n;
-                        if (cell.notes[n].isIncorrect) noteSpan.classList.add('note-incorrect');
-                        if (isHelperMode && cell.notes[n].isAdvanced) noteSpan.classList.add('note-advanced');
+                        const classes = helperNoteClassList({
+                            incorrect: Boolean(cell.notes[n].isIncorrect),
+                            advanced: isHelperMode && Boolean(advancedSet[n] || cell.notes[n].isAdvanced),
+                            sole: isHelperMode && Boolean(soleSet[n]),
+                        });
+                        for (const cls of classes) noteSpan.classList.add(cls);
                     }
                     noteGrid.appendChild(noteSpan);
                 }
@@ -382,6 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         wasNoteUsed = false;
         wasHelperUsed = false;
+        noteCount = 0;
+        hintCount = 0;
         errorCount = 0;
         secondsElapsed = 0;
         updateUIText(currentLang);
@@ -423,6 +473,8 @@ document.addEventListener('DOMContentLoaded', () => {
             difficulty: difficultySelect.value,
             noteUsed: wasNoteUsed,
             helperUsed: wasHelperUsed,
+            noteCount,
+            hintCount,
             date: Date.now(),
         };
         showInitialsPrompt();
@@ -457,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
             possible.advanced.forEach((num) => {
                 cell.notes[num] = { isIncorrect: false, isAdvanced: true };
             });
+            recordNotePlacements(possible.normal.length + possible.advanced.length);
         }
         drawBoard();
     }
@@ -524,7 +577,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (effectiveNoteMode) {
             if (cell.value !== 0) return;
             if (cell.notes[num]) delete cell.notes[num];
-            else cell.notes[num] = { isIncorrect: !isNoteValid(row, col, num) };
+            else {
+                cell.notes[num] = { isIncorrect: !isNoteValid(row, col, num) };
+                recordNotePlacements(1);
+            }
         } else {
             cell.value = num;
             cell.notes = {};
@@ -566,6 +622,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleKeyboardInput(e) {
+        if (rulesModal && !rulesModal.classList.contains('hidden')) {
+            if (e.key === 'Escape') closeRulesModal();
+            return;
+        }
         if (highscoreAwaitingInitials || e.target.closest('input, textarea')) return;
         if (!highscoreContainer.classList.contains('hidden')) return;
         if (!isGameActive) startGameTimer();
@@ -647,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timerElement.classList.toggle('text-red-600', isHelperMode);
         clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, isHelperMode ? 500 : 1000);
-        highlightCells();
+        drawBoard();
         saveGameState();
     }
 
@@ -682,14 +742,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function recordNotePlacements(n) {
+        if (n <= 0) return;
+        noteCount += n;
+        wasNoteUsed = true;
+    }
+
+    function recordHintUse() {
+        hintCount += 1;
+        wasHelperUsed = true;
+    }
+
     function handleHintRequest() {
         wasHelperUsed = true;
         const pref = localStorage.getItem('sudokuHintPreference') || 'local';
         if (pref === 'gemini') {
             const apiKey = localStorage.getItem('geminiApiKey');
-            if (apiKey) getGeminiHint(apiKey);
-            else apiKeyModal.classList.remove('hidden');
+            if (apiKey) {
+                recordHintUse();
+                getGeminiHint(apiKey);
+            } else apiKeyModal.classList.remove('hidden');
         } else {
+            recordHintUse();
             const hint = getLocalHint();
             hintTitle.textContent = t(currentLang, 'localHintTitle');
             hintContent.textContent = hint.text;
@@ -725,6 +799,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 isHelperMode,
                 wasNoteUsed,
                 wasHelperUsed,
+                noteCount,
+                hintCount,
                 currentGrade,
             }),
         );
@@ -746,6 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
             helperToggleCheckbox.checked = isHelperMode;
             wasNoteUsed = gs.wasNoteUsed;
             wasHelperUsed = gs.wasHelperUsed;
+            noteCount = Number.isInteger(gs.noteCount) ? gs.noteCount : 0;
+            hintCount = Number.isInteger(gs.hintCount) ? gs.hintCount : 0;
             currentGrade = gs.currentGrade || null;
             return true;
         } catch {
@@ -861,6 +939,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 errors: pendingWinScore.errors,
                 noteUsed: pendingWinScore.noteUsed,
                 helperUsed: pendingWinScore.helperUsed,
+                noteCount: pendingWinScore.noteCount || 0,
+                hintCount: pendingWinScore.hintCount || 0,
             });
             displayHighScores(pendingWinScore.difficulty, result.entry?.id || entry.id, result.scores, 'shared');
         } catch {
@@ -877,6 +957,32 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch {
             displayHighScores(pendingWinScore.difficulty, entry.id, getHighScores(pendingWinScore.difficulty), 'local');
         }
+    }
+
+    function onDifficultyChange() {
+        if (highscoreAwaitingInitials && pendingWinScore) {
+            difficultySelect.value = pendingWinScore.difficulty;
+            return;
+        }
+        showHighscoresForSelectedDifficulty();
+    }
+
+    async function showHighscoresForSelectedDifficulty() {
+        const difficulty = difficultySelect.value;
+        try {
+            const scores = await fetchSharedHighScores(difficulty);
+            displayHighScores(difficulty, null, scores, 'shared');
+        } catch {
+            displayHighScores(difficulty, null, getHighScores(difficulty), 'local-error');
+        }
+    }
+
+    function openRulesModal() {
+        if (rulesModal) rulesModal.classList.remove('hidden');
+    }
+
+    function closeRulesModal() {
+        if (rulesModal) rulesModal.classList.add('hidden');
     }
 
     function displayHighScores(difficulty, highlightId, scores, source) {
@@ -924,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
         boardElement.addEventListener('mouseout', handleCellMouseOut);
         document.addEventListener('keydown', handleKeyboardInput);
         newGameBtn.addEventListener('click', startNewGame);
-        difficultySelect.addEventListener('change', startNewGame);
+        difficultySelect.addEventListener('change', onDifficultyChange);
         highscoreContainer.addEventListener('click', (e) => {
             if (highscoreAwaitingInitials) return;
             if (e.target.closest('#highscore-prompt')) return;
@@ -932,6 +1038,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         notesToggleCheckbox.addEventListener('change', toggleNoteMode);
         helperToggleCheckbox.addEventListener('change', toggleHelperMode);
+        if (rulesBtn) rulesBtn.addEventListener('click', openRulesModal);
+        if (closeRulesModalBtn) closeRulesModalBtn.addEventListener('click', closeRulesModal);
+        if (rulesModal) {
+            rulesModal.addEventListener('click', (e) => {
+                if (e.target === rulesModal) closeRulesModal();
+            });
+        }
         geminiHintBtn.addEventListener('click', handleHintInteraction);
         geminiHintBtn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
