@@ -83,6 +83,61 @@ body {
             font-weight: 900;
             text-shadow: 0 0 0.35px currentColor, 0 0 0.35px currentColor;
         }
+
+        .rules-btn {
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            width: 1.4rem;
+            height: 1.4rem;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+        }
+        .rules-btn:hover {
+            color: #334155;
+            border-color: #94a3b8;
+        }
+        .rules-modal-content {
+            max-height: min(80vh, 36rem);
+            overflow-y: auto;
+        }
+        .rules-close {
+            position: absolute;
+            top: 0.6rem;
+            right: 0.75rem;
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.75rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .rules-close:hover { color: #f3f4f6; }
+        .rules-heading {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #93c5fd;
+            margin: 0.9rem 0 0.35rem;
+        }
+        .rules-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #e5e7eb;
+            margin: 0 0 0.35rem;
+        }
+        .rules-stars {
+            margin-top: 0.75rem;
+            color: #fde68a;
+        }
         
         /* Custom Toggle Switch */
         .toggle-checkbox:checked + .toggle-label .toggle-dot {
@@ -218,6 +273,7 @@ body {
             z-index: 50;
         }
         .modal-content {
+            position: relative;
             background-color: #1f2937; /* gray-800 */
             padding: 1.5rem;
             border-radius: 0.5rem;

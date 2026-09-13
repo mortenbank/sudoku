@@ -29,6 +29,15 @@ describe('i18n difficulty + highscore copy', () => {
         assert.notEqual(difficultyLabel('de', 'hard'), 'Svær');
     });
 
+    it('explains the new scoring and helper notes in all languages', () => {
+        for (const lang of LANGS) {
+            assert.match(t(lang, 'rulesScoring'), /120|2 min/i);
+            assert.match(t(lang, 'rulesNotes'), /1/i);
+            assert.match(t(lang, 'rulesHelp'), /gray|grå|grau|bold|fed|fett/i);
+            assert.ok(t(lang, 'rulesTitle').length > 0);
+        }
+    });
+
     it('uses a short Global highscore label instead of fælles', () => {
         assert.equal(t('da', 'highscoreShared'), 'Global highscore');
         assert.equal(t('en', 'highscoreShared'), 'Global highscore');

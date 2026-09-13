@@ -70,7 +70,8 @@ Ved sejr spørger overlayet om 2–3 initialer (A–Z / ÆØÅ / ÄÖÜ). Scoren
 Sidste godkendte initialer huskes kun lokalt i `localStorage` (`sudokuInitials`) og udfyldes automatisk ved næste sejr, så man ikke skal taste dem igen. Listen selv er stadig den fælles server-board.
 
 - **Blobs:** site-scopet store `sudoku-highscores` (stærk consistency). Ét JSON-objekt pr. sværhedsgrad (`beginner` / `easy` / `medium` / `hard` / `expert`) med top 10.
-- **Ingen hemmeligheder:** offentlig læsning. Skriv valideres på serveren (difficulty-enum, initialer, tid 1–12 t, fejl 0–500). `finalScore` og stjerner beregnes server-side — klienten stoles ikke på.
+- **Score (lavere er bedre):** `tid + fejl×120 + noter×1 + hints×60`. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt (allerede i timer-intervallet). Hver *placeret* note tæller (sletning refunderes ikke). Hvert hint-tryk (pære) koster 60 s. Manglende `noteCount`/`hintCount` på ældre poster tæller som 0 — eksisterende Blobs-rækker røres ikke.
+- **Ingen hemmeligheder:** offentlig læsning. Skriv valideres på serveren (difficulty-enum, initialer, tid 1–12 t, fejl 0–500, noteCount 0–5000, hintCount 0–200). `finalScore` og stjerner beregnes server-side — klienten stoles ikke på.
 - **Offline:** hvis API’et fejler, gemmes scoren stadig lokalt (`sudokuHighScores_${difficulty}`) og overlayet viser lokale tider med en tydelig besked. Spillet går ikke i stykker.
 - Blobs kræver ingen provisioning eller betalt database — det følger med Netlify-sitet.
 

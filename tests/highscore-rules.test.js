@@ -72,7 +72,18 @@ describe('score payload validation', () => {
         assert.equal(parsed.initials, 'MB');
         assert.equal(parsed.time, 120);
         assert.equal(parsed.errors, 1);
+        assert.equal(parsed.noteCount, 0);
+        assert.equal(parsed.hintCount, 0);
         assert.equal(parsed.finalScore, undefined);
+    });
+
+    it('accepts noteCount and hintCount and rejects out-of-range counts', () => {
+        const parsed = validateScorePayload({ ...ok, noteCount: 4, hintCount: 2 });
+        assert.equal(parsed.ok, true);
+        assert.equal(parsed.noteCount, 4);
+        assert.equal(parsed.hintCount, 2);
+        assert.equal(validateScorePayload({ ...ok, noteCount: -1 }).ok, false);
+        assert.equal(validateScorePayload({ ...ok, hintCount: 201 }).ok, false);
     });
 
     it('rejects unknown difficulty and absurd ranges', () => {
@@ -95,8 +106,10 @@ describe('score payload validation', () => {
 });
 
 describe('ranking and stars', () => {
-    it('applies the 30s error penalty', () => {
-        assert.equal(computedFinalScore(100, 2), 160);
+    it('applies the 2-minute error penalty plus note and hint costs', () => {
+        assert.equal(computedFinalScore(100, 2), 340);
+        assert.equal(computedFinalScore(100, 0, 5, 1), 165);
+        assert.equal(computedFinalScore(100, 1, undefined, undefined), 220);
     });
 
     it('awards gold / silver / none like the existing UI', () => {
@@ -117,7 +130,12 @@ describe('ranking and stars', () => {
     });
 
     it('rejects corrupt stored rows', () => {
-        assert.equal(looksLikeScore(buildScoreEntry({ initials: 'MB', time: 30, errors: 0 })), true);
+        const modern = buildScoreEntry({ initials: 'MB', time: 30, errors: 0, noteCount: 3, hintCount: 1 });
+        assert.equal(modern.finalScore, 93);
+        assert.equal(modern.noteCount, 3);
+        assert.equal(modern.hintCount, 1);
+        assert.equal(looksLikeScore(modern), true);
+        assert.equal(looksLikeScore({ initials: 'MB', time: 30, errors: 0, finalScore: 30 }), true);
         assert.equal(looksLikeScore({ initials: 'MB', time: 0, errors: 0, finalScore: 0 }), false);
         assert.equal(looksLikeScore({ initials: '!!!', time: 30, errors: 0, finalScore: 30 }), false);
     });

@@ -3,7 +3,11 @@ export const MAX_SCORES = 10;
 export const MIN_TIME = 1;
 export const MAX_TIME = 12 * 60 * 60;
 export const MAX_ERRORS = 500;
-export const ERROR_PENALTY = 30;
+export const MAX_NOTE_COUNT = 5000;
+export const MAX_HINT_COUNT = 200;
+export const ERROR_PENALTY = 120;
+export const NOTE_PENALTY = 1;
+export const HINT_PENALTY = 60;
 export const INITIALS_MIN = 2;
 export const INITIALS_MAX = 3;
 
@@ -53,8 +57,17 @@ export function writeRememberedInitials(raw, storage) {
     return initials;
 }
 
-export function computedFinalScore(time, errors) {
-    return time + errors * ERROR_PENALTY;
+function optionalCount(value, max) {
+    if (value === undefined || value === null) return 0;
+    if (!Number.isInteger(value) || value < 0 || value > max) return null;
+    return value;
+}
+
+/** Missing note/hint counts from older entries count as 0. */
+export function computedFinalScore(time, errors, noteCount = 0, hintCount = 0) {
+    const notes = Number.isInteger(noteCount) && noteCount > 0 ? noteCount : 0;
+    const hints = Number.isInteger(hintCount) && hintCount > 0 ? hintCount : 0;
+    return time + errors * ERROR_PENALTY + notes * NOTE_PENALTY + hints * HINT_PENALTY;
 }
 
 export function starTypeFor(errors, noteUsed, helperUsed) {
@@ -82,6 +95,14 @@ export function validateScorePayload(body) {
     if (!Number.isInteger(body.errors) || body.errors < 0 || body.errors > MAX_ERRORS) {
         return { ok: false, error: 'invalid_errors' };
     }
+    const noteCount = optionalCount(body.noteCount, MAX_NOTE_COUNT);
+    if (noteCount === null) {
+        return { ok: false, error: 'invalid_note_count' };
+    }
+    const hintCount = optionalCount(body.hintCount, MAX_HINT_COUNT);
+    if (hintCount === null) {
+        return { ok: false, error: 'invalid_hint_count' };
+    }
     return {
         ok: true,
         difficulty: body.difficulty,
@@ -90,6 +111,8 @@ export function validateScorePayload(body) {
         errors: body.errors,
         noteUsed: Boolean(body.noteUsed),
         helperUsed: Boolean(body.helperUsed),
+        noteCount,
+        hintCount,
     };
 }
 
@@ -115,16 +138,20 @@ export function rankAndTrim(scores) {
         .slice(0, MAX_SCORES);
 }
 
-export function buildScoreEntry({ initials, time, errors, noteUsed, helperUsed, date, id }) {
+export function buildScoreEntry({ initials, time, errors, noteUsed, helperUsed, noteCount, hintCount, date, id }) {
+    const notes = Number.isInteger(noteCount) && noteCount > 0 ? noteCount : 0;
+    const hints = Number.isInteger(hintCount) && hintCount > 0 ? hintCount : 0;
     return {
         id: id || `local-${date || Date.now()}`,
         initials: initials || '—',
         time,
         errors,
-        finalScore: computedFinalScore(time, errors),
+        finalScore: computedFinalScore(time, errors, notes, hints),
         starType: starTypeFor(errors, noteUsed, helperUsed),
         date: date || Date.now(),
         noteUsed: Boolean(noteUsed),
         helperUsed: Boolean(helperUsed),
+        noteCount: notes,
+        hintCount: hints,
     };
 }
