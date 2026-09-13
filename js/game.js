@@ -1,7 +1,13 @@
 import { generatePuzzle } from './generator.js';
 import { t, translations, difficultyLabel } from './i18n.js';
 import { isValidPlacement } from './sudoku.js';
-import { TECHNIQUE_LABELS, candidatesForCell, lockedCandidateEliminations } from './techniques.js';
+import {
+    TECHNIQUE_LABELS,
+    candidatesForCell,
+    helperNoteClassList,
+    lockedCandidateEliminations,
+    soleCandidateNotes,
+} from './techniques.js';
 import { VERSION } from './version.js';
 import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
@@ -209,9 +215,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return possible;
     }
 
+    function helperOverlayMaps() {
+        if (!isHelperMode) return { advancedNotesMap: {}, soleNotesMap: {} };
+        return {
+            advancedNotesMap: lockedCandidateEliminations(valuesGrid()),
+            soleNotesMap: soleCandidateNotes(valuesGrid()),
+        };
+    }
+
+    function syncAdvancedNoteFlags(advancedNotesMap) {
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = boardData[r][c];
+                if (cell.value !== 0) continue;
+                const advancedSet = advancedNotesMap[`${r},${c}`] || {};
+                for (const key of Object.keys(cell.notes)) {
+                    const num = Number(key);
+                    if (!cell.notes[num]) continue;
+                    cell.notes[num].isAdvanced = Boolean(advancedSet[num]);
+                }
+            }
+        }
+    }
+
     function drawBoard() {
         boardElement.innerHTML = '';
-        const advancedNotesMap = isHelperMode ? lockedCandidateEliminations(valuesGrid()) : {};
+        const { advancedNotesMap, soleNotesMap } = helperOverlayMaps();
+        if (isHelperMode) syncAdvancedNoteFlags(advancedNotesMap);
 
         for (let i = 0; i < size * size; i++) {
             const r = Math.floor(i / size);
@@ -231,12 +261,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (Object.keys(cell.notes).length > 0) {
                 const noteGrid = document.createElement('div');
                 noteGrid.className = 'note-grid';
+                const key = `${r},${c}`;
+                const advancedSet = advancedNotesMap[key] || {};
+                const soleSet = soleNotesMap[key] || {};
                 for (let n = 1; n <= 9; n++) {
                     const noteSpan = document.createElement('span');
                     if (cell.notes[n]) {
                         noteSpan.textContent = n;
-                        if (cell.notes[n].isIncorrect) noteSpan.classList.add('note-incorrect');
-                        if (isHelperMode && cell.notes[n].isAdvanced) noteSpan.classList.add('note-advanced');
+                        const classes = helperNoteClassList({
+                            incorrect: Boolean(cell.notes[n].isIncorrect),
+                            advanced: isHelperMode && Boolean(advancedSet[n] || cell.notes[n].isAdvanced),
+                            sole: isHelperMode && Boolean(soleSet[n]),
+                        });
+                        for (const cls of classes) noteSpan.classList.add(cls);
                     }
                     noteGrid.appendChild(noteSpan);
                 }
@@ -647,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timerElement.classList.toggle('text-red-600', isHelperMode);
         clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, isHelperMode ? 500 : 1000);
-        highlightCells();
+        drawBoard();
         saveGameState();
     }
 

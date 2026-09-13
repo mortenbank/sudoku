@@ -7,6 +7,9 @@ import {
     bandOfRank,
     candidateMasks,
     gradePuzzle,
+    helperNoteClassList,
+    lockedCandidateEliminations,
+    soleCandidateNotes,
 } from '../js/techniques.js';
 
 const FULL = parsePuzzle(
@@ -97,5 +100,46 @@ describe('candidate masks', () => {
 describe('uniqueness', () => {
     it('detects a board with two solutions', () => {
         assert.equal(hasUniqueSolution(emptyGrid()), false);
+    });
+});
+
+describe('helper note overlay', () => {
+    it('marks a naked single as the sole candidate in that cell', () => {
+        const grid = FULL.map((row) => row.slice());
+        grid[8][8] = 0;
+        const sole = soleCandidateNotes(grid);
+        assert.deepEqual(sole['8,8'], { 9: true });
+        assert.equal(sole['0,0'], undefined);
+    });
+
+    it('marks hidden singles when two cells in a row share the leftover pair', () => {
+        const grid = FULL.map((row) => row.slice());
+        grid[0][0] = 0; // 5
+        grid[0][1] = 0; // 3
+        const sole = soleCandidateNotes(grid);
+        assert.equal(sole['0,0'][5], true);
+        assert.equal(sole['0,1'][3], true);
+        assert.equal(sole['0,0'][3], undefined);
+        assert.equal(sole['0,1'][5], undefined);
+    });
+
+    it('recomputes pointing eliminations from the live board (not stored note flags)', () => {
+        const grid = emptyGrid();
+        // Digit 9 in box 0 can only live in row 0 → pointing drops 9 from the rest of row 0.
+        grid[1][3] = 9;
+        grid[2][4] = 9;
+        const gone = lockedCandidateEliminations(grid);
+        assert.equal(gone['0,7']?.[9], true);
+        assert.equal(gone['0,0']?.[9], undefined);
+    });
+
+    it('gives sole (bold) precedence over advanced (gray)', () => {
+        assert.deepEqual(helperNoteClassList({ incorrect: false, advanced: true, sole: true }), ['note-sole']);
+        assert.deepEqual(helperNoteClassList({ advanced: true }), ['note-advanced']);
+        assert.deepEqual(helperNoteClassList({ incorrect: true, advanced: true }), [
+            'note-incorrect',
+            'note-advanced',
+        ]);
+        assert.deepEqual(helperNoteClassList({}), []);
     });
 });

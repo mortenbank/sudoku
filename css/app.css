@@ -78,6 +78,11 @@ body {
         }
         .note-incorrect { color: #ef4444; }
         .note-advanced { color: #d1d5db; } /* Same light grey as preview */
+        .note-sole {
+            color: #111827; /* gray-900 — clearly the only remaining candidate */
+            font-weight: 900;
+            text-shadow: 0 0 0.35px currentColor, 0 0 0.35px currentColor;
+        }
         
         /* Custom Toggle Switch */
         .toggle-checkbox:checked + .toggle-label .toggle-dot {

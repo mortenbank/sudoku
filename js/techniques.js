@@ -571,3 +571,52 @@ export function lockedCandidateEliminations(grid) {
     }
     return eliminatable;
 }
+
+function markNoteMap(map, cellIndex, digit) {
+    const r = Math.floor(cellIndex / 9);
+    const c = cellIndex % 9;
+    const key = `${r},${c}`;
+    if (!map[key]) map[key] = {};
+    map[key][digit] = true;
+}
+
+/**
+ * Notes that are a naked single (only valid candidate in the cell) or a
+ * hidden single (only remaining place for that digit in its row, column, or box).
+ * Visual helper only — does not place the digit.
+ */
+export function soleCandidateNotes(grid) {
+    const { values, masks } = candidateMasks(grid);
+    const sole = {};
+    for (let i = 0; i < 81; i++) {
+        if (values[i]) continue;
+        const digits = bitsToDigits(masks[i]);
+        if (digits.length === 1) markNoteMap(sole, i, digits[0]);
+    }
+    for (const unit of UNITS.all) {
+        for (let d = 1; d <= 9; d++) {
+            const bit = bitOf(d);
+            let found = -1;
+            let count = 0;
+            for (const i of unit) {
+                if (values[i]) continue;
+                if (masks[i] & bit) {
+                    found = i;
+                    count++;
+                    if (count > 1) break;
+                }
+            }
+            if (count === 1) markNoteMap(sole, found, d);
+        }
+    }
+    return sole;
+}
+
+/** CSS classes for a helper-mode note. Sole (bold) wins over advanced (gray). */
+export function helperNoteClassList({ incorrect = false, advanced = false, sole = false } = {}) {
+    const classes = [];
+    if (incorrect) classes.push('note-incorrect');
+    if (sole) classes.push('note-sole');
+    else if (advanced) classes.push('note-advanced');
+    return classes;
+}
