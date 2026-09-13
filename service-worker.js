@@ -1,5 +1,5 @@
 // Author: Morten Bank
-const CACHE_NAME = 'sudoku-cache-v11';
+const CACHE_NAME = 'sudoku-cache-v12';
 
 const urlsToCache = [
     '/',

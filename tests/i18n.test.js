@@ -31,11 +31,16 @@ describe('i18n difficulty + highscore copy', () => {
 
     it('explains the new scoring and helper notes in all languages', () => {
         for (const lang of LANGS) {
-            assert.match(t(lang, 'rulesScoring'), /5 min|5 Min/i);
-            assert.match(t(lang, 'rulesScoring'), /10/);
-            assert.match(t(lang, 'rulesNotes'), /10/);
-            assert.match(t(lang, 'rulesNotes'), /1/);
+            const scoring = t(lang, 'rulesScoring');
+            const notes = t(lang, 'rulesNotes');
+            assert.match(scoring, /5 min|5 Min/i);
+            assert.match(scoring, /300/);
+            assert.match(scoring, /1 min|1 Min/i);
+            assert.equal(/2 min|×2 min|errors×2|fejl×2|Fehler×2/i.test(scoring + notes), false);
+            assert.match(notes, /10/);
+            assert.match(notes, /1/);
             assert.match(t(lang, 'rulesHelp'), /gray|grå|grau|bold|fed|fett/i);
+            assert.match(t(lang, 'rulesStars'), /gold|guld/i);
             assert.ok(t(lang, 'rulesTitle').length > 0);
         }
     });

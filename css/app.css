@@ -136,6 +136,17 @@ body {
             margin-top: 0.75rem;
             color: #fde68a;
         }
+        #timer.timer-penalty-flash {
+            animation: timer-penalty-blink 1.05s linear;
+        }
+        @keyframes timer-penalty-blink {
+            0%, 16% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
+            17%, 32% { color: inherit; text-shadow: none; }
+            33%, 48% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
+            49%, 64% { color: inherit; text-shadow: none; }
+            65%, 80% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
+            81%, 100% { color: inherit; text-shadow: none; }
+        }
         
         /* Custom Toggle Switch */
         .toggle-checkbox:checked + .toggle-label .toggle-dot {

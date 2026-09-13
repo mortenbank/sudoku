@@ -9,8 +9,11 @@ import {
     validateScorePayload,
     computedFinalScore,
     notePlacementCost,
+    penaltySeconds,
+    rawPlayTime,
     ERROR_PENALTY,
     NOTE_FILL_PENALTY,
+    HINT_PENALTY,
     starTypeFor,
     rankAndTrim,
     looksLikeScore,
@@ -124,6 +127,14 @@ describe('ranking and stars', () => {
         assert.equal(notePlacementCost({ placed: 1 }), 1);
         assert.equal(notePlacementCost({ placed: 3 }), 3);
         assert.equal(computedFinalScore(100, 0, notePlacementCost({ cellFill: true, placed: 8 }), 0), 110);
+    });
+
+    it('strips baked-in clock penalties so the server does not double-count', () => {
+        assert.equal(HINT_PENALTY, 60);
+        assert.equal(penaltySeconds(1, 10, 1), 300 + 10 + 60);
+        assert.equal(rawPlayTime(470, 1, 10, 1), 100);
+        assert.equal(computedFinalScore(rawPlayTime(470, 1, 10, 1), 1, 10, 1), 470);
+        assert.equal(rawPlayTime(5, 1, 0, 0), 1);
     });
 
     it('awards gold / silver / none like the existing UI', () => {

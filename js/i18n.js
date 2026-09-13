@@ -55,10 +55,10 @@ export const translations = {
         rulesTitle: 'Rules',
         rulesScoringTitle: 'Score',
         rulesScoring:
-            'Lower is better. Score = time + errors×5 min + notes + hints×1 min. Each single note costs 1 second; a double-tap or right-click that fills a cell costs a flat 10 seconds for that cell (not 1 per digit). The Help toggle makes the clock run at double speed.',
+            'Lower is better. Penalties are added to the clock as you play. Each error adds 5 minutes (300 seconds). Each hint adds 1 minute. The Help toggle makes the clock run at double speed.',
         rulesNotesTitle: 'Notes',
         rulesNotes:
-            'Write possible digits in empty cells. Right-click or double-tap fills all candidates and costs 10 seconds for that cell, regardless of how many digits are written. Toggling a single note still costs 1 second. With Help on, notes that can be eliminated immediately turn gray.',
+            'Write possible digits in empty cells. Double-tap or right-click fills all candidates and adds a flat 10 seconds to the clock for that cell, regardless of how many digits. Each hand-placed note adds 1 second. With Help on, notes that can be eliminated immediately turn gray.',
         rulesHelpTitle: 'Help',
         rulesHelp:
             'Highlights filled digits. Gray notes can be eliminated right away (pointing/claiming). A bold note is the only possible digit in that cell — or the only place for that digit in its row, column, or box.',
@@ -121,10 +121,10 @@ export const translations = {
         rulesTitle: 'Regler',
         rulesScoringTitle: 'Score',
         rulesScoring:
-            'Lavere er bedre. Score = tid + fejl×5 min + noter + hints×1 min. Enkeltnoter koster 1 sekund; dobbelttryk eller højreklik, der udfylder et felt, koster 10 sekunder for feltet (ikke 1 pr. tal). Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.',
+            'Lavere er bedre. Straffe lægges på uret mens du spiller. Hver fejl lægger 5 minutter (300 sekunder) til. Hvert hint lægger 1 minut til. Hjælp-kontakten får uret til at løbe dobbelt så hurtigt.',
         rulesNotesTitle: 'Noter',
         rulesNotes:
-            'Skriv mulige tal i tomme felter. Højreklik eller dobbelttryk udfylder alle kandidater og koster 10 sekunder for det felt, uanset antal tal. Enkelt noter koster stadig 1 sekund hver. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.',
+            'Skriv mulige tal i tomme felter. Dobbelttryk eller højreklik udfylder alle kandidater og lægger 10 sekunder til uret for det felt — uanset antal tal. Hver enkelt note (håndsat) lægger 1 sekund til. Med Hjælp slået til bliver noter, der straks kan udelukkes, grå.',
         rulesHelpTitle: 'Hjælp',
         rulesHelp:
             'Fremhæver tal på brættet. Grå noter kan elimineres med det samme (pointing/claiming). En fed note er det eneste mulige tal i feltet — eller det eneste sted i rækken, kolonnen eller boksen.',
@@ -187,10 +187,10 @@ export const translations = {
         rulesTitle: 'Regeln',
         rulesScoringTitle: 'Punkte',
         rulesScoring:
-            'Niedriger ist besser. Punkte = Zeit + Fehler×5 Min + Notizen + Hinweise×1 Min. Einzelne Notizen kosten 1 Sekunde; ein Doppeltipp oder Rechtsklick, der eine Zelle füllt, kostet pauschal 10 Sekunden (nicht 1 pro Ziffer). Der Hilfe-Schalter lässt die Uhr doppelt so schnell laufen.',
+            'Niedriger ist besser. Strafen werden sofort auf die Uhr gerechnet. Jeder Fehler addiert 5 Minuten (300 Sekunden). Jeder Hinweis addiert 1 Minute. Der Hilfe-Schalter lässt die Uhr doppelt so schnell laufen.',
         rulesNotesTitle: 'Notizen',
         rulesNotes:
-            'Schreibe mögliche Ziffern in leere Zellen. Rechtsklick oder Doppeltipp füllt alle Kandidaten und kostet 10 Sekunden für diese Zelle, unabhängig von der Anzahl. Einzelne Notizen kosten weiterhin 1 Sekunde. Mit Hilfe werden sofort eliminierbare Notizen grau.',
+            'Schreibe mögliche Ziffern in leere Zellen. Doppeltipp oder Rechtsklick füllt alle Kandidaten und addiert pauschal 10 Sekunden auf die Uhr für diese Zelle — unabhängig von der Anzahl. Jede per Hand gesetzte Notiz addiert 1 Sekunde. Mit Hilfe werden sofort eliminierbare Notizen grau.',
         rulesHelpTitle: 'Hilfe',
         rulesHelp:
             'Hebt gesetzte Ziffern hervor. Graue Notizen lassen sich sofort streichen (Pointing/Claiming). Eine fette Notiz ist die einzige mögliche Ziffer in der Zelle — oder der einzige Platz in Zeile, Spalte oder Block.',
