@@ -61,8 +61,7 @@
             </div>
 
             <div class="w-full max-w-lg mx-auto lg:w-96 lg:max-w-none flex flex-col gap-4 lg:mt-24 relative">
-                <div class="p-4 bg-white text-slate-700 rounded-lg shadow-xl shadow-black/40 flex flex-col gap-4 relative">
-                    <button id="rules-btn" type="button" class="rules-btn" aria-label="Regler" title="Regler">?</button>
+                <div class="p-4 bg-white text-slate-700 rounded-lg shadow-xl shadow-black/40 flex flex-col gap-4">
                     <div class="flex items-center justify-between">
                         <span class="font-semibold" data-translate="level">Niveau:</span>
                         <select id="difficulty-select" class="bg-slate-50 border border-slate-300 rounded-md px-2 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -103,10 +102,13 @@
 
                     <button id="new-game-btn" class="w-full bg-slate-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-600 transition-colors duration-200 shadow" data-translate="newGame">Nyt Spil</button>
 
-                    <div class="lang-selector text-center text-xs text-slate-400 mt-2">
-                        <a href="#" data-lang="da" class="hover:text-slate-600">DA</a> |
-                        <a href="#" data-lang="en" class="hover:text-slate-600">EN</a> |
-                        <a href="#" data-lang="de" class="hover:text-slate-600">DE</a>
+                    <div class="flex items-center justify-center gap-3 mt-2">
+                        <div class="lang-selector text-center text-xs text-slate-400">
+                            <a href="#" data-lang="da" class="hover:text-slate-600">DA</a> |
+                            <a href="#" data-lang="en" class="hover:text-slate-600">EN</a> |
+                            <a href="#" data-lang="de" class="hover:text-slate-600">DE</a>
+                        </div>
+                        <button id="rules-btn" type="button" class="rules-btn" aria-label="Regler" title="Regler">?</button>
                     </div>
                 </div>
 
