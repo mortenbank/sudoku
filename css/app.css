@@ -137,15 +137,16 @@ body {
             color: #fde68a;
         }
         #timer.timer-penalty-flash {
-            animation: timer-penalty-blink 1.05s linear;
+            animation: timer-penalty-blink 1.2s steps(1, end);
+            transition: none !important;
         }
         @keyframes timer-penalty-blink {
-            0%, 16% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
-            17%, 32% { color: inherit; text-shadow: none; }
-            33%, 48% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
-            49%, 64% { color: inherit; text-shadow: none; }
-            65%, 80% { color: #fca5a5; text-shadow: 0 0 10px #ef4444; }
-            81%, 100% { color: inherit; text-shadow: none; }
+            0%, 14% { color: #fecaca !important; text-shadow: 0 0 12px #ef4444; }
+            15%, 28% { color: #f8fafc !important; text-shadow: none; }
+            29%, 43% { color: #fecaca !important; text-shadow: 0 0 12px #ef4444; }
+            44%, 57% { color: #f8fafc !important; text-shadow: none; }
+            58%, 72% { color: #fecaca !important; text-shadow: 0 0 12px #ef4444; }
+            73%, 100% { color: inherit !important; text-shadow: none; }
         }
         
         /* Custom Toggle Switch */

@@ -374,7 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
         timerElement.classList.add('timer-penalty-flash');
     }
 
-    /** Add a scoring penalty to the visible clock so players see the cost immediately. */
+    /**
+     * Fold a scoring penalty into the running clock immediately.
+     * Submit later sends rawPlayTime(clock, errors, notes, hints) so the server
+     * formula (time + errors×300 + notes + hints×60) does not double-count.
+     */
     function addTimerPenalty(seconds) {
         if (!Number.isInteger(seconds) || seconds <= 0) return;
         secondsElapsed += seconds;
