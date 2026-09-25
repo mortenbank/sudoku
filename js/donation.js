@@ -1,9 +1,9 @@
 /**
- * Support link. Paste a MobilePay deep link or https URL below.
+ * Support link. Paste a Buy Me a Coffee https URL below.
  * An empty string (or "#") hides the button so production stays clean.
- * TODO: set MobilePay URL
+ * TODO: set Buy Me a Coffee URL
  */
-export const DONATION_URL = '';
+export const DONATION_URL = 'https://buymeacoffee.com/morten4';
 
 /** Href for the support link, or null when the control should stay hidden. */
 export function donationHref(url = DONATION_URL) {
