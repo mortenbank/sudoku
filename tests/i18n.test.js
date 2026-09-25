@@ -45,6 +45,12 @@ describe('i18n difficulty + highscore copy', () => {
         }
     });
 
+    it('translates the discrete support link', () => {
+        assert.equal(t('da', 'donate'), 'Støt');
+        assert.equal(t('en', 'donate'), 'Support');
+        assert.equal(t('de', 'donate'), 'Unterstützen');
+    });
+
     it('uses a short Global highscore label instead of fælles', () => {
         assert.equal(t('da', 'highscoreShared'), 'Global highscore');
         assert.equal(t('en', 'highscoreShared'), 'Global highscore');

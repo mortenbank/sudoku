@@ -1,5 +1,5 @@
 // Author: Morten Bank
-const CACHE_NAME = 'sudoku-cache-v13';
+const CACHE_NAME = 'sudoku-cache-v14';
 
 const urlsToCache = [
     '/',
@@ -15,6 +15,7 @@ const urlsToCache = [
     '/js/i18n.js',
     '/js/game.js',
     '/js/version.js',
+    '/js/donation.js',
     '/js/highscore-rules.js',
     '/js/highscores-api.js',
 ];

@@ -9,6 +9,7 @@ import {
     soleCandidateNotes,
 } from './techniques.js';
 import { VERSION } from './version.js';
+import { DONATION_URL, donationHref } from './donation.js';
 import { sanitizeInitials, normalizeInitialsInput, buildScoreEntry, readRememberedInitials, writeRememberedInitials, notePlacementCost, ERROR_PENALTY, HINT_PENALTY, penaltySeconds, rawPlayTime } from './highscore-rules.js';
 import { fetchSharedHighScores, submitSharedHighScore } from './highscores-api.js';
 
@@ -104,7 +105,28 @@ document.addEventListener('DOMContentLoaded', () => {
             rulesBtn.setAttribute('aria-label', label);
             rulesBtn.setAttribute('title', label);
         }
+        const donateLink = document.getElementById('donate-link');
+        if (donateLink) donateLink.setAttribute('title', t(lang, 'donate'));
         if (closeRulesModalBtn) closeRulesModalBtn.setAttribute('aria-label', t(lang, 'rulesClose'));
+    }
+
+    function applyDonationLink() {
+        const link = document.getElementById('donate-link');
+        if (!link) return;
+        const href = donationHref(DONATION_URL);
+        if (!href) {
+            link.hidden = true;
+            link.classList.add('hidden');
+            link.removeAttribute('href');
+            link.removeAttribute('target');
+            link.removeAttribute('rel');
+            return;
+        }
+        link.href = href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.hidden = false;
+        link.classList.remove('hidden');
     }
 
     function setLanguage(lang) {
@@ -1126,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         keypadNumbersElement.addEventListener('touchend', handleDoubleTap);
 
         if (appVersionEl) appVersionEl.textContent = `v${VERSION}`;
+        applyDonationLink();
         const savedLang = localStorage.getItem('sudokuLang');
         setLanguage(savedLang && translations[savedLang] ? savedLang : 'da');
         if (!loadGameState()) startNewGame();
